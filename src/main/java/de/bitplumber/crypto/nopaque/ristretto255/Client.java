@@ -105,10 +105,10 @@ public class Client extends AbstractRistretto255Sha512 {
 	private static final record StoreResult(byte[] envelope, byte[] clientPublicKey, byte[] maskingKey, byte[] exportKey) {}
 	private static final record RecoverResult(byte[] exportKey) {}
 
-	private CleartextCredentials createCleartextCredentials(byte[] serverPublicKey, byte[] clientPpublicKey, byte[] serverIdentity, byte[] clientIdentity) {
+	private CleartextCredentials createCleartextCredentials(byte[] serverPublicKey, byte[] clientPublicKey, byte[] serverIdentity, byte[] clientIdentity) {
 		return new CleartextCredentials(
 			ObjectUtils.defaultIfNull(serverIdentity, serverPublicKey),
-			ObjectUtils.defaultIfNull(clientIdentity, clientPpublicKey)
+			ObjectUtils.defaultIfNull(clientIdentity, clientPublicKey)
 		);
 	}
 
@@ -181,7 +181,7 @@ public class Client extends AbstractRistretto255Sha512 {
 	 * @param secret A randomly chosen secret, in the case of NOPAQUE, should be a uniform random bytestring (i.e. use <code>randomSecret()</code>)
 	 * @return A <code>CreateRegistrationRequestResult</code> record, containing the <code>blind</code> parameter and the serialized <code>request</code>.
 	 */
-	public CreateRegistrationRequestResult createRegistrationRequest(byte[] secret) {
+	public CreateRegistrationRequestResult createRegistrationRequest(byte[] secret) throws Exception {
 		final var blindResult = oprf.blind(secret, params.blindRegistration());
 		final var blindedMessage = oprf.encodeElement(blindResult.blindedElement());
 		state = new ClientState(secret, oprf.encodeScalar(blindResult.blind()));
@@ -225,7 +225,7 @@ public class Client extends AbstractRistretto255Sha512 {
 	 * @param secret
 	 * @return <code>RecoverRequest</code>
 	 */
-	public RecoverRequest createRecoverRequest(byte[] secret) {
+	public RecoverRequest createRecoverRequest(byte[] secret) throws Exception {
 		final var oprfResult = oprf.blind(secret, params.blindRecover());
 		final var blindedMessage = oprf.encodeElement(oprfResult.blindedElement());
 		state = new ClientState(secret, oprf.encodeScalar(oprfResult.blind()));

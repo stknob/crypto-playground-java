@@ -68,7 +68,7 @@ class PoprfRistretto255SHA512Test {
 				Proof.fromBytes(blindEvaluateResult.proof()), vector.info(), blindResult.tweakedKey()));
 			assertArrayEquals(vector.output(), finalizeResult, "finalize output");
 
-			final var evaluateResult = poprf.evaluate(keypair.secretKey(), vector.input(), vector.info());
+			final var evaluateResult = assertDoesNotThrow(() -> poprf.evaluate(keypair.secretKey(), vector.input(), vector.info()));
 			assertArrayEquals(vector.output(), evaluateResult, "evaluate output");
 		}
 	}

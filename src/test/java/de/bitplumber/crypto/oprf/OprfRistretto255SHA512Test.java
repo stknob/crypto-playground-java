@@ -45,16 +45,16 @@ class OprfRistretto255SHA512Test {
 			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeypair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey());
 
-			final var blindResult = oprf.blind(vector.input(), vector.blind());
+			final var blindResult = assertDoesNotThrow(() -> oprf.blind(vector.input(), vector.blind()));
 			assertArrayEquals(vector.blindedElement(), oprf.encodeElement(blindResult.blindedElement()));
 
-			final var blindEvaluateResult = oprf.blindEvaluate(keypair.secretKey(), blindResult.blindedElement());
+			final var blindEvaluateResult = assertDoesNotThrow(() -> oprf.blindEvaluate(keypair.secretKey(), blindResult.blindedElement()));
 			assertArrayEquals(vector.evaluationElement(), oprf.encodeElement(blindEvaluateResult));
 
-			final var finalizeResult = oprf.finalize(vector.input(), blindResult.blind(), blindEvaluateResult);
+			final var finalizeResult = assertDoesNotThrow(() -> oprf.finalize(vector.input(), blindResult.blind(), blindEvaluateResult));
 			assertArrayEquals(vector.output(), finalizeResult);
 
-			final var evaluateResult = oprf.evaluate(keypair.secretKey(), vector.input());
+			final var evaluateResult = assertDoesNotThrow(() -> oprf.evaluate(keypair.secretKey(), vector.input()));
 			assertArrayEquals(vector.output(), evaluateResult);
 		}
 	}

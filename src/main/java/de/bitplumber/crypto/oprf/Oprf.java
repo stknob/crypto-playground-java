@@ -8,11 +8,11 @@ public interface Oprf<S, E, BR> {
 	public E decodeElement(byte[] input) throws Exception;
 
 	public byte[] encodeScalar(S scalar);
-	public S decodeScalar(byte[] input);
+	public S decodeScalar(byte[] input) throws Exception;
 	public S randomScalar();
 
-	public BR blind(byte[] input);
-	public E blindEvaluate(byte[] secretKey, E blindedElement);
-	public byte[] finalize(byte[] input, S blind, E evaluatedElement);
-	public byte[] evaluate(byte[] secretKey, byte[] input);
+	public BR blind(byte[] input) throws Exception;
+	public E blindEvaluate(byte[] serverSecretKey, E blindedElement) throws Exception;
+	public byte[] finalize(byte[] input, S blind, E evaluatedElement) throws Exception;
+	public byte[] evaluate(byte[] serverSecretKey, byte[] input) throws Exception;
 }

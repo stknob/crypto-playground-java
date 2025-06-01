@@ -12,7 +12,7 @@ import de.bitplumber.crypto.oprf.Labels;
 import de.bitplumber.crypto.oprf.Modes;
 import de.bitplumber.crypto.oprf.Voprf;
 
-public class VoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implements Voprf<Scalar, RistrettoElement, VoprfRistretto255Sha512.BlindResult, VoprfRistretto255Sha512.BlindEvaluateResult, VoprfRistretto255Sha512.Proof> {
+public class VoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implements Voprf<Scalar, RistrettoElement, VoprfRistretto255Sha512.BlindResult, VoprfRistretto255Sha512.BlindEvaluateResult, AbstractRistretto255Sha512.Proof> {
 	public static record BlindResult(Scalar blind, RistrettoElement blindedElement) {}
 	public static final record BlindEvaluateResult(RistrettoElement evaluatedElement, byte[] proof) {}
 	private final VoprfParameter params;
@@ -72,22 +72,22 @@ public class VoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implemen
 		}
 	}
 
-	private BlindResult doBlind(byte[] input, Scalar blind) {
+	private BlindResult doBlind(byte[] input, Scalar blind) throws Exception {
 		final var inputElement = hashToGroup(input, null);
-		if (inputElement.equals(RistrettoElement.IDENTITY))
+		if (RistrettoElement.IDENTITY.ctEquals(inputElement) == 1)
 			throw new IllegalArgumentException("InvalidInputError");
 
 		final var blindedElement = inputElement.multiply(blind);
 		return new BlindResult(blind, blindedElement);
 	}
 
-	public BlindResult blind(byte[] input) {
+	public BlindResult blind(byte[] input) throws Exception {
 		return doBlind(input, params.blindRandomScalar() == null ? randomScalar() : decodeScalar(params.blindRandomScalar()));
 	}
 
-	public BlindEvaluateResult blindEvaluate(byte[] secretKey, byte[] publicKey, RistrettoElement blindedElement) throws Exception {
-		final var skS = decodeScalar(secretKey);
-		final var pkS = decodeElement(publicKey);
+	public BlindEvaluateResult blindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, RistrettoElement blindedElement) throws Exception {
+		final var skS = decodeScalar(serverSecretKey);
+		final var pkS = decodeElement(serverPublicKey);
 		final var evaluatedElement = blindedElement.multiply(skS);
 		final var blindedElements  = new RistrettoElement[]{ blindedElement };
 		final var evaluatedElements = new RistrettoElement[]{ evaluatedElement };
@@ -96,8 +96,8 @@ public class VoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implemen
 		return new BlindEvaluateResult(evaluatedElement, proof.toByteArray());
 	}
 
-	public byte[] finalize(byte[] input, Scalar blind, RistrettoElement evaluatedElement, RistrettoElement blindedElement, byte[] publicKey, Proof proof) throws Exception {
-		final var pkS = decodeElement(publicKey);
+	public byte[] finalize(byte[] input, Scalar blind, RistrettoElement evaluatedElement, RistrettoElement blindedElement, byte[] serverPublicKey, Proof proof) throws Exception {
+		final var pkS = decodeElement(serverPublicKey);
 		final var blindedElements = new RistrettoElement[]{ blindedElement };
 		final var evaluatedElements = new RistrettoElement[]{ evaluatedElement };
 		if (!verifyProof(RistrettoElement.BASEPOINT, pkS, blindedElements, evaluatedElements, proof))
@@ -113,12 +113,12 @@ public class VoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implemen
 		}));
 	}
 
-	public byte[] evaluate(byte[] secretKey, byte[] input) {
+	public byte[] evaluate(byte[] serverSecretKey, byte[] input) throws Exception {
 		final var inputElement = hashToGroup(input, null);
-		if (inputElement.equals(RistrettoElement.IDENTITY))
+		if (RistrettoElement.IDENTITY.ctEquals(inputElement) == 1)
 			throw new IllegalArgumentException("InvalidInputError");
 
-		final var skS = decodeScalar(secretKey);
+		final var skS = decodeScalar(serverSecretKey);
 		final var evaluatedElement = inputElement.multiply(skS);
 		final var issuedElement = encodeElement(evaluatedElement);
 

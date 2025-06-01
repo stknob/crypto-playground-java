@@ -11,11 +11,11 @@ public interface Voprf<S, E, BR, BER, P> {
 	public E decodeElement(byte[] input) throws Exception;
 
 	public byte[] encodeScalar(S scalar);
-	public S decodeScalar(byte[] input);
+	public S decodeScalar(byte[] input) throws Exception;
 	public S randomScalar();
 
-	public BR blind(byte[] input);
-	public BER blindEvaluate(byte[] secretKey, byte[] publicKey, RistrettoElement blindedElement) throws Exception;
-	public byte[] finalize(byte[] input, Scalar blind, RistrettoElement evaluatedElement, RistrettoElement blindedElement, byte[] publicKey, P proof) throws Exception;
-	public byte[] evaluate(byte[] secretKey, byte[] input);
+	public BR blind(byte[] input) throws Exception;
+	public BER blindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, E blindedElement) throws Exception;
+	public byte[] finalize(byte[] input, S blind, E evaluatedElement, E blindedElement, byte[] serverPublicKey, P proof) throws Exception;
+	public byte[] evaluate(byte[] serverSecretKey, byte[] input) throws Exception;
 }

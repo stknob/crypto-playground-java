@@ -56,7 +56,7 @@ class VoprfRistretto255SHA512Test {
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
 			assertArrayEquals(vector.publicKey(), keypair.publicKey(), "public key");
 
-			final var blindResult = voprf.blind(vector.input());
+			final var blindResult = assertDoesNotThrow(() -> voprf.blind(vector.input()));
 			assertArrayEquals(vector.blindedElement(), voprf.encodeElement(blindResult.blindedElement()), "blindedElement");
 
 			final var blindEvaluateResult = assertDoesNotThrow(() -> voprf.blindEvaluate(keypair.secretKey(), keypair.publicKey(), blindResult.blindedElement()));
@@ -67,7 +67,7 @@ class VoprfRistretto255SHA512Test {
 				blindResult.blindedElement(), vector.publicKey(), Proof.fromBytes(vector.proof())));
 			assertArrayEquals(vector.output(), finalizeResult, "finalize output");
 
-			final var evaluateResult = voprf.evaluate(keypair.secretKey(), vector.input());
+			final var evaluateResult = assertDoesNotThrow(() -> voprf.evaluate(keypair.secretKey(), vector.input()));
 			assertArrayEquals(vector.output(), evaluateResult, "evaluate output");
 		}
 	}

@@ -60,7 +60,7 @@ public abstract class AbstractRistretto255Sha512 {
 		return element.compress().toByteArray();
 	}
 
-	public RistrettoElement decodeElement(byte[] input) throws InvalidEncodingException {
+	public RistrettoElement decodeElement(byte[] input) throws Exception {
 		return new CompressedRistretto(input).decompress();
 	}
 
@@ -68,7 +68,7 @@ public abstract class AbstractRistretto255Sha512 {
 		return scalar.toByteArray();
 	}
 
-	public Scalar decodeScalar(byte[] input) {
+	public Scalar decodeScalar(byte[] input) throws Exception {
 		return Scalar.fromCanonicalBytes(input);
 	}
 
@@ -102,7 +102,7 @@ public abstract class AbstractRistretto255Sha512 {
 
 		int counter = 0;
 		Scalar secretScalar = Scalar.ZERO;
-		while (secretScalar.equals(Scalar.ZERO)) {
+		while (Scalar.ZERO.ctEquals(secretScalar) == 1) {
 			if (counter > 255) throw new Exception("Failed to derive secret key");
 			secretScalar = hashToScalar(Arrays.concatenate(deriveInput, I2OSP(counter, 1)), deriveDST);
 			counter++;
@@ -227,7 +227,7 @@ public abstract class AbstractRistretto255Sha512 {
 		return generateProof(k, A, B, C, D, null);
 	}
 
-	protected boolean verifyProof(RistrettoElement A, RistrettoElement B, RistrettoElement[] C, RistrettoElement[] D, Proof proof) {
+	protected boolean verifyProof(RistrettoElement A, RistrettoElement B, RistrettoElement[] C, RistrettoElement[] D, Proof proof) throws Exception {
 		final var MZ = computeComposites(B, C, D);
 		final var M = MZ.M();
 		final var Z = MZ.Z();

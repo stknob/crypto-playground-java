@@ -23,29 +23,29 @@ public class OprfRistretto255Sha512 extends AbstractRistretto255Sha512 implement
 		return CONTEXT;
 	}
 
-	private BlindResult doBlind(byte[] input, Scalar blind) {
+	private BlindResult doBlind(byte[] input, Scalar blind) throws Exception {
 		final var inputElement = hashToGroup(input, null);
-		if (inputElement.equals(RistrettoElement.IDENTITY))
+		if (RistrettoElement.IDENTITY.ctEquals(inputElement) == 1)
 			throw new IllegalArgumentException("InvalidInputError");
 
 		final var blindedElement = inputElement.multiply(blind);
 		return new BlindResult(blind, blindedElement);
 	}
 
-	public BlindResult blind(byte[] input, byte[] blind) {
+	public BlindResult blind(byte[] input, byte[] blind) throws Exception {
 		return doBlind(input, blind == null ? randomScalar() : decodeScalar(blind));
 	}
 
-	public BlindResult blind(byte[] input) {
+	public BlindResult blind(byte[] input) throws Exception {
 		return doBlind(input, randomScalar());
 	}
 
-	public RistrettoElement blindEvaluate(byte[] secretKey, RistrettoElement blindedElement) {
-		final var skS = decodeScalar(secretKey);
+	public RistrettoElement blindEvaluate(byte[] serverSecretKey, RistrettoElement blindedElement) throws Exception {
+		final var skS = decodeScalar(serverSecretKey);
 		return blindedElement.multiply(skS);
 	}
 
-	public byte[] finalize(byte[] input, Scalar blind, RistrettoElement evaluatedElement) {
+	public byte[] finalize(byte[] input, Scalar blind, RistrettoElement evaluatedElement) throws Exception {
 		final var invBlind = blind.invert();
 		final var n = evaluatedElement.multiply(invBlind);
 		final var unblindedElement = encodeElement(n);
@@ -56,12 +56,12 @@ public class OprfRistretto255Sha512 extends AbstractRistretto255Sha512 implement
 		}));
 	}
 
-	public byte[] evaluate(byte[] secretKey, byte[] input) {
+	public byte[] evaluate(byte[] serverSecretKey, byte[] input) throws Exception {
 		final var inputElement = hashToGroup(input, null);
-		if (inputElement.equals(RistrettoElement.IDENTITY))
+		if (RistrettoElement.IDENTITY.ctEquals(inputElement) == 1)
 			throw new IllegalArgumentException("InvalidInputError");
 
-		final var skS = decodeScalar(secretKey);
+		final var skS = decodeScalar(serverSecretKey);
 		final var evaluatedElement = inputElement.multiply(skS);
 		final var issuedElement = encodeElement(evaluatedElement);
 

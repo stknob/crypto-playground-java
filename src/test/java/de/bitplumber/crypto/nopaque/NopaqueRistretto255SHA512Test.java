@@ -100,7 +100,7 @@ class NopaqueRistretto255SHA512Test {
 			/*
 			 * Registration
 			 */
-			final var registerResult = client.createRegistrationRequest(vector.password());
+			final var registerResult = assertDoesNotThrow(() -> client.createRegistrationRequest(vector.password()));
 			assertArrayEquals(vector.blindRegistration(), registerResult.blind());
 			assertArrayEquals(vector.registrationRequest(), registerResult.request());
 
@@ -116,7 +116,7 @@ class NopaqueRistretto255SHA512Test {
 			 * Recovery
 			 */
 			final var serverRecord = RegistrationRecord.fromBytes(finalizeResult.record());
-			final var recoverRequest = client.createRecoverRequest(vector.password());
+			final var recoverRequest = assertDoesNotThrow(() -> client.createRecoverRequest(vector.password()));
 			assertArrayEquals(vector.recoverRequest(), recoverRequest.toByteArray());
 
 			final var serverKeypair = new KeyPair(vector.serverSecretKey(), vector.serverPublicKey());
@@ -138,7 +138,7 @@ class NopaqueRistretto255SHA512Test {
 		 * Registration
 		 */
 		final var password = client.randomSecret();
-		final var registerResult = client.createRegistrationRequest(password);
+		final var registerResult = assertDoesNotThrow(() -> client.createRegistrationRequest(password));
 		final var registerRequest = registerResult.request();
 
 		final var serverKeypair = server.randomKeypair();
@@ -156,7 +156,7 @@ class NopaqueRistretto255SHA512Test {
 		/*
 		 * Recover
 		 */
-		final var recoverRequest = client.createRecoverRequest(password);
+		final var recoverRequest = assertDoesNotThrow(() -> client.createRecoverRequest(password));
 		final var recoverResponse = assertDoesNotThrow(() -> server.createRecoverResponse(serverKeypair, serverRecord, credentialId, oprfSeed, recoverRequest));
 		final var recoveredExportKey = assertDoesNotThrow(() -> client.finalizeRecoverRequest(recoverResponse, null, null));
 		assertArrayEquals(exportKey, recoveredExportKey);

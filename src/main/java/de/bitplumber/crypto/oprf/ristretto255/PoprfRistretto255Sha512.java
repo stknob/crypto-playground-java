@@ -11,9 +11,8 @@ import com.weavechain.curve25519.Scalar;
 import de.bitplumber.crypto.oprf.Labels;
 import de.bitplumber.crypto.oprf.Modes;
 import de.bitplumber.crypto.oprf.Poprf;
-import de.bitplumber.crypto.oprf.ristretto255.VoprfRistretto255Sha512.VoprfParameter;
 
-public class PoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implements Poprf<Scalar, RistrettoElement, PoprfRistretto255Sha512.BlindResult, PoprfRistretto255Sha512.BlindEvaluateResult, PoprfRistretto255Sha512.Proof> {
+public class PoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implements Poprf<Scalar, RistrettoElement, PoprfRistretto255Sha512.BlindResult, PoprfRistretto255Sha512.BlindEvaluateResult, AbstractRistretto255Sha512.Proof> {
 	public static record BlindResult(Scalar blind, RistrettoElement blindedElement, RistrettoElement tweakedKey) {}
 	public static final record BlindEvaluateResult(RistrettoElement evaluatedElement, byte[] proof) {}
 	private final PoprfParameter params;
@@ -73,33 +72,33 @@ public class PoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implemen
 		}
 	}
 
-	private BlindResult doBlind(byte[] input, byte[] info, byte[] publicKey, Scalar blind) throws Exception {
-		final var pkS = decodeElement(publicKey);
+	private BlindResult doBlind(byte[] input, byte[] info, byte[] serverPublicKey, Scalar blind) throws Exception {
+		final var pkS = decodeElement(serverPublicKey);
 		final var framedInfo = Arrays.concatenate(Labels.INFO, I2OSP(info.length, 2), info);
 		final var m = hashToScalar(framedInfo, null);
 		final var T = RistrettoElement.BASEPOINT.multiply(m);
 		final var tweakedKey = T.add(pkS);
-		if (tweakedKey.ctEquals(RistrettoElement.IDENTITY) == 1)
+		if (RistrettoElement.IDENTITY.ctEquals(tweakedKey) == 1)
 			throw new IllegalArgumentException("InvalidInputError");
 
 		final var inputElement = hashToGroup(input, null);
-		if (inputElement.ctEquals(RistrettoElement.IDENTITY) == 1)
+		if (RistrettoElement.IDENTITY.ctEquals(inputElement) == 1)
 			throw new IllegalArgumentException("InvalidInputError");
 
 		final var blindedElement = inputElement.multiply(blind);
 		return new BlindResult(blind, blindedElement, tweakedKey);
 	}
 
-	public BlindResult blind(byte[] input, byte[] info, byte[] publicKey) throws Exception {
-		return doBlind(input, info, publicKey, params.blindRandomScalar() == null ? randomScalar() : decodeScalar(params.blindRandomScalar()));
+	public BlindResult blind(byte[] input, byte[] info, byte[] serverPublicKey) throws Exception {
+		return doBlind(input, info, serverPublicKey, params.blindRandomScalar() == null ? randomScalar() : decodeScalar(params.blindRandomScalar()));
 	}
 
-	public BlindEvaluateResult blindEvaluate(byte[] secretKey, RistrettoElement blindedElement, byte[] info) throws Exception {
-		final var skS = decodeScalar(secretKey);
+	public BlindEvaluateResult blindEvaluate(byte[] serverSecretKey, RistrettoElement blindedElement, byte[] info) throws Exception {
+		final var skS = decodeScalar(serverSecretKey);
 		final var framedInfo = Arrays.concatenate(Labels.INFO, I2OSP(info.length, 2), info);
 		final var m = hashToScalar(framedInfo, null);
 		final var t = skS.add(m);
-		if (t.ctEquals(Scalar.ZERO) == 1)
+		if (Scalar.ZERO.ctEquals(t) == 1)
 			throw new IllegalArgumentException("InverseError");
 
 		final var evaluatedElement = blindedElement.multiply(t.invert());
@@ -128,16 +127,16 @@ public class PoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implemen
 		}));
 	}
 
-	public byte[] evaluate(byte[] secretKey, byte[] input, byte[] info) {
+	public byte[] evaluate(byte[] serverSecretKey, byte[] input, byte[] info) throws Exception {
 		final var inputElement = hashToGroup(input, null);
-		if (inputElement.ctEquals(RistrettoElement.IDENTITY) == 1)
+		if (RistrettoElement.IDENTITY.ctEquals(inputElement) == 1)
 			throw new IllegalArgumentException("InvalidInputError");
 
-		final var skS = decodeScalar(secretKey);
+		final var skS = decodeScalar(serverSecretKey);
 		final var framedInfo = Arrays.concatenate(Labels.INFO, I2OSP(info.length, 2), info);
 		final var m = hashToScalar(framedInfo, null);
 		final var t = skS.add(m);
-		if (t.ctEquals(Scalar.ZERO) == 1)
+		if (Scalar.ZERO.ctEquals(t) == 1)
 			throw new IllegalArgumentException("InverseError");
 
 		final var evaluatedElement = inputElement.multiply(t.invert());
