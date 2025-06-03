@@ -46,9 +46,9 @@ public abstract class AbstractRistretto255Sha512 {
 
 		if (ell > 1) {
 			final var tmp = new byte[HASH_OUTPUT_SIZE];
-			for (int i = 1; i <= ell; i++) {
+			for (int i = 1; i < ell; i++) {
 				Bytes.xor(b0.length, b0, b[i - 1], tmp);
-				b[i] = hash(Arrays.concatenate(tmp, I2OSP(i, 1), dstPrime));
+				b[i] = hash(Arrays.concatenate(tmp, I2OSP(i + 1, 1), dstPrime));
 			}
 		}
 
