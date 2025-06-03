@@ -12,7 +12,6 @@ import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.Bytes;
 
 import com.weavechain.curve25519.CompressedRistretto;
-import com.weavechain.curve25519.InvalidEncodingException;
 import com.weavechain.curve25519.RistrettoElement;
 import com.weavechain.curve25519.Scalar;
 
