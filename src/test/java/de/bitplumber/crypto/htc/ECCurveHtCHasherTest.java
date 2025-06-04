@@ -7,8 +7,6 @@ import java.nio.charset.StandardCharsets;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-import de.bitplumber.crypto.htc.ECCurveHtCHasher;
-
 public class ECCurveHtCHasherTest {
 	public static final record RFC9830TestVector(String DST, String msg, byte[][] u, byte[] px, byte[] py) {}
 	/**
@@ -339,7 +337,6 @@ public class ECCurveHtCHasherTest {
 
 			switch (mode) {
 			case "HashToCurve": {
-
 				final var p = htc.hashToCurve(msg, DST);
 				assertArrayEquals(p.getAffineXCoord().getEncoded(), vector.px(), () -> String.format("%s-%s P.x is invalid", htc.getCurveName(), mode));
 				assertArrayEquals(p.getAffineYCoord().getEncoded(), vector.py(), () -> String.format("%s-%s P.y is invalid", htc.getCurveName(), mode));
