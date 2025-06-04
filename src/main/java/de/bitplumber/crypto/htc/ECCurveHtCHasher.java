@@ -3,7 +3,6 @@ package de.bitplumber.crypto.htc;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.bouncycastle.crypto.ExtendedDigest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
@@ -17,7 +16,6 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.Bytes;
-import org.bouncycastle.util.encoders.Hex;
 
 public class ECCurveHtCHasher {
     private final ECNamedCurveParameterSpec curveSpec;
@@ -62,6 +60,10 @@ public class ECCurveHtCHasher {
 		this.encodeToCurveDST = encodeToCurveDST.getBytes(StandardCharsets.UTF_8);
 	}
 
+	/**
+	 * Create a hasher instance for the P256-SHA256 suite
+	 * @return
+	 */
 	public static ECCurveHtCHasher createP256() {
 		return new ECCurveHtCHasher(
 			"secp256r1",
@@ -74,6 +76,10 @@ public class ECCurveHtCHasher {
 		);
 	}
 
+	/**
+	 * Create a hasher instance for the P384-SHA384 suite
+	 * @return
+	 */
 	public static ECCurveHtCHasher createP384() {
 		return new ECCurveHtCHasher(
 			"secp384r1",
@@ -86,6 +92,10 @@ public class ECCurveHtCHasher {
 		);
 	}
 
+	/**
+	 * Create a hasher instance for the P521-SHA512 suite
+	 * @return
+	 */
 	public static ECCurveHtCHasher createP521() {
 		return new ECCurveHtCHasher(
 			"secp521r1",
@@ -98,13 +108,58 @@ public class ECCurveHtCHasher {
 		);
 	}
 
-	public String curveName() {
+	/**
+	 * @return
+	 */
+	public String getCurveName() {
 		return curveSpec.getName();
 	}
 
+	/**
+	 * @return
+	 */
+	public ECNamedCurveParameterSpec getCurveSpec() {
+		return curveSpec;
+	}
 
-	private static final record SqrtRatioResult(boolean is_gx1_square, ECFieldElement y1) {}
-	private SqrtRatioResult sqrtRatio(ECFieldElement u, ECFieldElement v) {
+	/**
+	 * @return
+	 */
+	public ECCurve getCurve() {
+		return curve;
+	}
+
+	/**
+	 * @return
+	 */
+	public String getHashName() {
+		return this.hash.getAlgorithmName();
+	}
+
+	/**
+	 * @return
+	 */
+	public int getHashOutputSize() {
+		return this.hashOutputSize;
+	}
+
+	/**
+	 * @return
+	 */
+	public int getHashBlockSize() {
+		return this.hashBlockSize;
+	}
+
+	/**
+	 * Get the curve security level 'k'
+	 * @return
+	 */
+	public int getSecurityLevel() {
+		return this.k;
+	}
+
+	protected static final record SqrtRatioResult(boolean is_gx1_square, ECFieldElement y1) {}
+	protected SqrtRatioResult sqrtRatio(ECFieldElement u, ECFieldElement v) {
 		if (G.mod(BigInteger.valueOf(4)).equals(BigInteger.valueOf(3))) {
 			return sqrtRatio3mod4(u, v);
 		} else {
@@ -119,17 +174,18 @@ public class ECCurveHtCHasher {
 	 * @param cond
 	 * @return
 	 */
-	private ECFieldElement cmov(ECFieldElement a, ECFieldElement b, boolean cond) {
+	protected ECFieldElement cmov(ECFieldElement a, ECFieldElement b, boolean cond) {
 		return cond ? b : a;
 	}
 
 	/**
-	 *
+	 * Port of noble-curves' SWUFpSqrtRatio() generic sqrt_ratio TypeScript implementation
+	 *    noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com)
 	 * @param u
 	 * @param v
 	 * @return
 	 */
-	private SqrtRatioResult sqrtRatioGeneric(ECFieldElement u, ECFieldElement v) {
+	protected SqrtRatioResult sqrtRatioGeneric(ECFieldElement u, ECFieldElement v) {
 		var l = BigInteger.ZERO;
 		for (var o = q.subtract(BigInteger.ONE); o.mod(BigInteger.TWO).equals(BigInteger.ZERO); o = o.divide(BigInteger.TWO))
 			l = l.add(BigInteger.ONE);
@@ -177,7 +233,7 @@ public class ECCurveHtCHasher {
 	 * @param v
 	 * @return
 	 */
-	private SqrtRatioResult sqrtRatio3mod4(ECFieldElement u, ECFieldElement v) {
+	protected SqrtRatioResult sqrtRatio3mod4(ECFieldElement u, ECFieldElement v) {
 		final var c1 = q.subtract(BigInteger.valueOf(3)).divide(BigInteger.valueOf(4));
 		final var c2 = Z.negate().sqrt();
 
@@ -191,14 +247,13 @@ public class ECCurveHtCHasher {
 		return new SqrtRatioResult(isQR, y);
 	}
 
-	private int sgn0_m_eq_1(ECFieldElement x) {
+	protected int sgn0_m_eq_1(ECFieldElement x) {
 		return x.toBigInteger().mod(BigInteger.TWO).intValue();
 	}
 
-	private ECPoint map_to_curve_simple_swu(ECFieldElement u) {
-		if (!curve.isValidFieldElement(Z.toBigInteger())) throw new IllegalStateException("Z not valid Fp");
-		if (!curve.isValidFieldElement(A.toBigInteger())) throw new IllegalStateException("A not valid Fp");
-		if (!curve.isValidFieldElement(B.toBigInteger())) throw new IllegalStateException("B not valid Fp");
+	protected ECPoint map_to_curve_simple_swu(ECFieldElement u) {
+		if (!curve.isValidFieldElement(u.toBigInteger()))
+			throw new IllegalStateException("u not valid Fp");
 
 		var tv1 = u.square().multiply(Z);
 		var tv2 = tv1.square().add(tv1);
@@ -221,13 +276,10 @@ public class ECCurveHtCHasher {
 		final var e1 = sgn0_m_eq_1(u) == sgn0_m_eq_1(y);
 		y = cmov(y.negate(), y, e1);
 		x = x.divide(tv4);
-
-		if (!curve.isValidFieldElement(x.toBigInteger())) throw new IllegalStateException("x not valid Fp");
-		if (!curve.isValidFieldElement(y.toBigInteger())) throw new IllegalStateException("y not valid Fp");
 		return curve.createPoint(x.toBigInteger(), y.toBigInteger());
 	}
 
-	private ECPoint clearCofactor(ECPoint p) {
+	protected ECPoint clearCofactor(ECPoint p) {
 		return p.multiply(H);
 	}
 

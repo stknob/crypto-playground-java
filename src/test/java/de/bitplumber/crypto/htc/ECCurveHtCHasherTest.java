@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-import de.bitplumber.crypto.oprf.htc.ECCurveHtCHasher;
+import de.bitplumber.crypto.htc.ECCurveHtCHasher;
 
 public class ECCurveHtCHasherTest {
 	public static final record RFC9830TestVector(String DST, String msg, byte[][] u, byte[] px, byte[] py) {}
@@ -334,21 +334,21 @@ public class ECCurveHtCHasherTest {
 			final var u = htc.hashToField(msg, DST, vector.u().length);
 			for (int i = 0; i < u.length; i++) {
 				final int idx = i;
-				assertArrayEquals(u[i][0].getEncoded(), vector.u()[i], () -> String.format("%s-%s u[%d] is invalid", htc.curveName(), mode, idx));
+				assertArrayEquals(u[i][0].getEncoded(), vector.u()[i], () -> String.format("%s-%s u[%d] is invalid", htc.getCurveName(), mode, idx));
 			}
 
 			switch (mode) {
 			case "HashToCurve": {
 
 				final var p = htc.hashToCurve(msg, DST);
-				assertArrayEquals(p.getAffineXCoord().getEncoded(), vector.px(), () -> String.format("%s-%s P.x is invalid", htc.curveName(), mode));
-				assertArrayEquals(p.getAffineYCoord().getEncoded(), vector.py(), () -> String.format("%s-%s P.y is invalid", htc.curveName(), mode));
+				assertArrayEquals(p.getAffineXCoord().getEncoded(), vector.px(), () -> String.format("%s-%s P.x is invalid", htc.getCurveName(), mode));
+				assertArrayEquals(p.getAffineYCoord().getEncoded(), vector.py(), () -> String.format("%s-%s P.y is invalid", htc.getCurveName(), mode));
 				break;
 			}
 			case "EncodeToCurve": {
 				final var p = htc.encodeToCurve(msg, DST);
-				assertArrayEquals(p.getAffineXCoord().getEncoded(), vector.px(), () -> String.format("%s-%s P.x is invalid", htc.curveName(), mode));
-				assertArrayEquals(p.getAffineYCoord().getEncoded(), vector.py(), () -> String.format("%s-%s P.y is invalid", htc.curveName(), mode));
+				assertArrayEquals(p.getAffineXCoord().getEncoded(), vector.px(), () -> String.format("%s-%s P.x is invalid", htc.getCurveName(), mode));
+				assertArrayEquals(p.getAffineYCoord().getEncoded(), vector.py(), () -> String.format("%s-%s P.y is invalid", htc.getCurveName(), mode));
 				break;
 			}
 			default:
