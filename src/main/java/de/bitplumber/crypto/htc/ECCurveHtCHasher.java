@@ -20,12 +20,13 @@ import org.bouncycastle.util.Bytes;
 public class ECCurveHtCHasher {
     private final ECNamedCurveParameterSpec curveSpec;
     private final ECCurve curve;
+	private final ECCurve isogenyCurve;
 	private final ECFieldElement A;  //NOSONAR
 	private final ECFieldElement B;  //NOSONAR
 	private final ECFieldElement Z;  //NOSONAR
 	private final BigInteger q;
 	private final BigInteger G; //NOSONAR
-	private final BigInteger H; //NOSONAR
+	// private final BigInteger H; //NOSONAR
 
 	protected final byte[] hashToCurveDST;
 	protected final byte[] encodeToCurveDST;
@@ -35,17 +36,20 @@ public class ECCurveHtCHasher {
 	protected final int m;
 	protected final int k;
 
-	public ECCurveHtCHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final int Z, final int m, final int k) {
+	protected ECCurveHtCHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final ECCurve isogenyCurve, final int Z, final int m, final int k) {
 		// Curve and parameters
 		this.curveSpec = ECNamedCurveTable.getParameterSpec(curveName);
 		this.curve = curveSpec.getCurve();
-		this.q = curve.getField().getCharacteristic();	// Field modulus
-		this.G = curve.getOrder();						// Curve order
+		this.isogenyCurve = isogenyCurve;				// Optional: isogeny curve parameters
 
-		this.Z = curve.fromBigInteger(BigInteger.valueOf(Z).mod(q));
-		this.H = curve.getCofactor();
-		this.A = curve.getA();
-		this.B = curve.getB();
+		// Either use isogeny curve parameters for operations or main curve
+		final var htcCurve = ObjectUtils.defaultIfNull(isogenyCurve, curve);
+		this.q = htcCurve.getField().getCharacteristic();	// Field modulus
+		this.Z = htcCurve.fromBigInteger(BigInteger.valueOf(Z).mod(q));
+		// this.H = htcCurve.getCofactor();
+		this.G = htcCurve.getOrder();						// Curve order
+		this.A = htcCurve.getA();
+		this.B = htcCurve.getB();
 
 		this.m = m;		// Same as curve.getField().getDimenstions() ??
 		this.k = k;		// Security level in bits
@@ -59,6 +63,11 @@ public class ECCurveHtCHasher {
 		this.hashToCurveDST = hashToCurveDST.getBytes(StandardCharsets.UTF_8);
 		this.encodeToCurveDST = encodeToCurveDST.getBytes(StandardCharsets.UTF_8);
 	}
+
+	protected ECCurveHtCHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final int Z, final int m, final int k) {
+		this(curveName, hash, hashToCurveDST, encodeToCurveDST, null, Z, m, k);
+	}
+
 
 	/**
 	 * Create a hasher instance for the P256-SHA256 suite
@@ -107,6 +116,33 @@ public class ECCurveHtCHasher {
 			256
 		);
 	}
+
+	/**
+	 * Create a hasher instance for the secp256k1-SHA256 suite
+	 * Missing secp256k1 isogeny parameters taken from https://github.com/armfazh/hash-to-curve-ref/
+	 * @return
+	 */
+	public static ECCurveHtCHasher createSecp256k1() {
+		final var isogenyCurve = new ECCurve.Fp(
+			new BigInteger("00fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16),
+			new BigInteger("003f8731abdd661adca08a5558f0f5d272e953d363cb6f0e5d405447c01a444533", 16),
+			BigInteger.valueOf(1771),
+			new BigInteger("00fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16),
+			BigInteger.valueOf(1)
+		);
+
+		return new ECCurveHtCHasher(
+			"secp256k1",
+			new SHA256Digest(),
+			"secp256k1_XMD:SHA-256_SSWU_RO_",
+			"secp256k1_XMD:SHA-256_SSWU_NU_",
+			isogenyCurve,
+			-11,
+			1,
+			128
+		);
+	}
+
 
 	/**
 	 * @return
@@ -159,11 +195,11 @@ public class ECCurveHtCHasher {
 	}
 
 	protected static final record SqrtRatioResult(boolean is_gx1_square, ECFieldElement y1) {}
-	protected SqrtRatioResult sqrtRatio(ECFieldElement u, ECFieldElement v) {
+	protected SqrtRatioResult sqrtRatio(ECCurve curve, ECFieldElement u, ECFieldElement v) {
 		if (G.mod(BigInteger.valueOf(4)).equals(BigInteger.valueOf(3))) {
-			return sqrtRatio3mod4(u, v);
+			return sqrtRatio3Mod4(curve, u, v);
 		} else {
-			return sqrtRatioGeneric(u, v);
+			return sqrtRatioGeneric(curve, u, v);
 		}
 	}
 
@@ -185,7 +221,7 @@ public class ECCurveHtCHasher {
 	 * @param v
 	 * @return
 	 */
-	protected SqrtRatioResult sqrtRatioGeneric(ECFieldElement u, ECFieldElement v) {
+	protected SqrtRatioResult sqrtRatioGeneric(ECCurve curve, ECFieldElement u, ECFieldElement v) {
 		var l = BigInteger.ZERO;
 		for (var o = q.subtract(BigInteger.ONE); o.mod(BigInteger.TWO).equals(BigInteger.ZERO); o = o.divide(BigInteger.TWO))
 			l = l.add(BigInteger.ONE);
@@ -233,7 +269,7 @@ public class ECCurveHtCHasher {
 	 * @param v
 	 * @return
 	 */
-	protected SqrtRatioResult sqrtRatio3mod4(ECFieldElement u, ECFieldElement v) {
+	protected SqrtRatioResult sqrtRatio3Mod4(ECCurve curve, ECFieldElement u, ECFieldElement v) {
 		final var c1 = q.subtract(BigInteger.valueOf(3)).divide(BigInteger.valueOf(4));
 		final var c2 = Z.negate().sqrt();
 
@@ -251,7 +287,65 @@ public class ECCurveHtCHasher {
 		return x.toBigInteger().mod(BigInteger.TWO).intValue();
 	}
 
-	protected ECPoint map_to_curve_simple_swu(ECFieldElement u) {
+	private static final BigInteger[] secp256k1_xnum = new BigInteger[]{
+		new BigInteger("8e38e38e38e38e38e38e38e38e38e38e38e38e38e38e38e38e38e38daaaaa8c7", 16),
+		new BigInteger("07d3d4c80bc321d5b9f315cea7fd44c5d595d2fc0bf63b92dfff1044f17c6581", 16),
+		new BigInteger("534c328d23f234e6e2a413deca25caece4506144037c40314ecbd0b53d9dd262", 16),
+		new BigInteger("8e38e38e38e38e38e38e38e38e38e38e38e38e38e38e38e38e38e38daaaaa88c", 16),
+	};
+
+	private static final BigInteger[] secp256k1_xden = new BigInteger[]{
+		new BigInteger("d35771193d94918a9ca34ccbb7b640dd86cd409542f8487d9fe6b745781eb49b", 16),
+		new BigInteger("edadc6f64383dc1df7c4b2d51b54225406d36b641f5e41bbc52a56612a8c6d14", 16),
+	};
+
+	private static final BigInteger[] secp256k1_ynum = new BigInteger[]{
+		new BigInteger("4bda12f684bda12f684bda12f684bda12f684bda12f684bda12f684b8e38e23c", 16),
+		new BigInteger("c75e0c32d5cb7c0fa9d0a54b12a0a6d5647ab046d686da6fdffc90fc201d71a3", 16),
+		new BigInteger("29a6194691f91a73715209ef6512e576722830a201be2018a765e85a9ecee931", 16),
+		new BigInteger("2f684bda12f684bda12f684bda12f684bda12f684bda12f684bda12f38e38d84", 16),
+	};
+
+	private static final BigInteger[] secp256k1_yden = new BigInteger[]{
+		new BigInteger("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffff93b", 16),
+		new BigInteger("7a06534bb8bdb49fd5e9e6632722c2989467c1bfc8e8d978dfb425d2685c2573", 16),
+		new BigInteger("6484aa716545ca2cf3a70c3fa8fe337e0a3d21162f0d6299a7bf8192bfd2a76f", 16),
+	};
+
+	/**
+	 * RFC 9830 - E.1. 3-Isogeny Map for secp256k1
+	 * @param input A point on the secp256k1 isogeny curve E'
+	 * @return A point on the secp256k1 curve E
+	 */
+	protected ECPoint isoMap3(ECPoint input) {
+		final var xIn = input.getAffineXCoord();
+		final var yIn = input.getAffineYCoord();
+
+		// x = x_num / x_den
+		var xNum = isogenyCurve.fromBigInteger(secp256k1_xnum[3]);
+		xNum = xIn.multiply(xNum).add(isogenyCurve.fromBigInteger(secp256k1_xnum[2]));
+		xNum = xIn.multiply(xNum).add(isogenyCurve.fromBigInteger(secp256k1_xnum[1]));
+		xNum = xIn.multiply(xNum).add(isogenyCurve.fromBigInteger(secp256k1_xnum[0]));
+
+		var xDen = xIn.add(isogenyCurve.fromBigInteger(secp256k1_xden[1]));
+		xDen = xIn.multiply(xDen).add(isogenyCurve.fromBigInteger(secp256k1_xden[0]));
+
+		// y = y' * x_num / x_den
+		var yNum = isogenyCurve.fromBigInteger(secp256k1_ynum[3]);
+		yNum = xIn.multiply(yNum).add(isogenyCurve.fromBigInteger(secp256k1_ynum[2]));
+		yNum = xIn.multiply(yNum).add(isogenyCurve.fromBigInteger(secp256k1_ynum[1]));
+		yNum = xIn.multiply(yNum).add(isogenyCurve.fromBigInteger(secp256k1_ynum[0]));
+
+		var yDen = xIn.add(isogenyCurve.fromBigInteger(secp256k1_yden[2]));
+		yDen = xIn.multiply(yDen).add(isogenyCurve.fromBigInteger(secp256k1_yden[1]));
+		yDen = xIn.multiply(yDen).add(isogenyCurve.fromBigInteger(secp256k1_yden[0]));
+
+		final var x = xNum.divide(xDen).toBigInteger();
+		final var y = yNum.divide(yDen).multiply(yIn).toBigInteger();
+		return curve.createPoint(x, y);
+	}
+
+	protected ECPoint mapToCurveSimpleSWU(ECCurve curve, ECFieldElement u) {
 		if (!curve.isValidFieldElement(u.toBigInteger()))
 			throw new IllegalStateException("u not valid Fp");
 
@@ -267,7 +361,7 @@ public class ECCurveHtCHasher {
 		tv5 = tv6.multiply(B);
 		tv2 = tv2.add(tv5);
 
-		final var sqr = sqrtRatio(tv2, tv6);
+		final var sqr = sqrtRatio(curve, tv2, tv6);
 		var x = tv1.multiply(tv3);
 		var y = tv1.multiply(u).multiply(sqr.y1());
 		x = cmov(x, tv3, sqr.is_gx1_square());
@@ -279,8 +373,8 @@ public class ECCurveHtCHasher {
 		return curve.createPoint(x.toBigInteger(), y.toBigInteger());
 	}
 
-	protected ECPoint clearCofactor(ECPoint p) {
-		return p.multiply(H);
+	protected ECPoint clearCofactor(ECCurve curve, ECPoint p) {
+		return p.multiply(curve.getCofactor());
 	}
 
 	protected byte[] digest(byte[] input) {
@@ -332,7 +426,7 @@ public class ECCurveHtCHasher {
 	 * @param count
 	 * @return
 	 */
-	protected ECFieldElement[][] hashToField(byte[] input, byte[] DST, int m, int k, int count) {
+	protected ECFieldElement[][] hashToField(ECCurve curve, byte[] input, byte[] DST, int m, int k, int count) {
 		final var L = Math.ceilDiv(curve.getFieldSize() + k, 8);
 		final var lengthInBytes = count * m * L;
 		final var uniformBytes = expandMessageXMD(input, DST, lengthInBytes);
@@ -358,8 +452,13 @@ public class ECCurveHtCHasher {
 	 * @param count
 	 * @return
 	 */
-	public ECFieldElement[][] hashToField(byte[] input, byte[] DST, int count) {
-		return hashToField(input, DST, m, k, count);
+	protected ECFieldElement[][] hashToField(byte[] input, byte[] DST, int count) {
+		switch (curveSpec.getName()) {
+		case "secp256k1":
+			throw new UnsupportedOperationException("Operation not supported for secp256k1");
+		default:
+			return hashToField(curve, input, DST, m, k, count);
+		}
 	}
 
 	/**
@@ -370,15 +469,26 @@ public class ECCurveHtCHasher {
 	 */
 	public ECPoint hashToCurve(byte[] input, byte[] DST) {
 		final var htcDST = ObjectUtils.defaultIfNull(DST, hashToCurveDST);
-		final var u  = hashToField(input, htcDST, m, k, 2);
-		final var Q0 = map_to_curve_simple_swu(u[0][0]);
-		final var Q1 = map_to_curve_simple_swu(u[1][0]);
 
-		if (!Q0.isValid()) throw new IllegalStateException("HtC q0 invalid");
-		if (!Q1.isValid()) throw new IllegalStateException("HtC q1 invalid");
+		final ECPoint q0, q1;
+		switch (curveSpec.getName()) {
+		case "secp256k1": {
+			// AB == 0 special case for secp256k1
+			final var u = hashToField(isogenyCurve, input, htcDST, m, k, 2);
+			q0 = isoMap3(mapToCurveSimpleSWU(isogenyCurve, u[0][0]));
+			q1 = isoMap3(mapToCurveSimpleSWU(isogenyCurve, u[1][0]));
+			break;
+		}
+		default: {
+			final var u = hashToField(curve, input, htcDST, m, k, 2);
+			q0 = mapToCurveSimpleSWU(curve, u[0][0]);
+			q1 = mapToCurveSimpleSWU(curve, u[1][0]);
+			break;
+		}}
 
-		final var R = Q0.add(Q1);
-		return clearCofactor(R);
+		final var r = q0.add(q1);
+		if (!r.isValid()) throw new IllegalStateException("HashToCurve R invalid");
+		return clearCofactor(curve, r);
 	}
 
 	public ECPoint hashToCurve(byte[] input) {
@@ -392,10 +502,22 @@ public class ECCurveHtCHasher {
 	 * @return
 	 */
 	public ECPoint encodeToCurve(byte[] input, byte[] DST) {
-		final var htcDST = ObjectUtils.defaultIfNull(DST, encodeToCurveDST);
-		final var u  = hashToField(input, htcDST, m, k, 1);
-		final var Q = map_to_curve_simple_swu(u[0][0]);
-		if (!Q.isValid()) throw new IllegalStateException("EncodeToCurve q invalid");
-		return clearCofactor(Q);
+		final var etcDST = ObjectUtils.defaultIfNull(DST, encodeToCurveDST);
+
+		final ECPoint q;
+		switch (curveSpec.getName()) {
+		case "secp256k1": {
+			final var u = hashToField(isogenyCurve, input, etcDST, m, k, 1);
+			q = isoMap3(mapToCurveSimpleSWU(isogenyCurve, u[0][0]));
+			break;
+		}
+		default: {
+			final var u = hashToField(curve, input, etcDST, m, k, 1);
+			q = mapToCurveSimpleSWU(curve, u[0][0]);
+			break;
+		}}
+
+		if (!q.isValid()) throw new IllegalStateException("EncodeToCurve Q invalid");
+		return clearCofactor(curve, q);
 	}
 }

@@ -1,9 +1,12 @@
 package de.bitplumber.crypto.htc;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -318,34 +321,146 @@ public class ECCurveHtCHasherTest {
 		),
 	};
 
+
+	public static final RFC9830TestVector[] Secp256k1HashToCurveTestVectors = new RFC9830TestVector[]{
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_",
+			"",
+			new byte[][]{
+				Hex.decode("6b0f9910dd2ba71c78f2ee9f04d73b5f4c5f7fc773a701abea1e573cab002fb3"),
+				Hex.decode("1ae6c212e08fe1a5937f6202f929a2cc8ef4ee5b9782db68b0d5799fd8f09e16"),
+			},
+			Hex.decode("c1cae290e291aee617ebaef1be6d73861479c48b841eaba9b7b5852ddfeb1346"),
+			Hex.decode("64fa678e07ae116126f08b022a94af6de15985c996c3a91b64c406a960e51067")
+		),
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_",
+			"abc",
+			new byte[][]{
+				Hex.decode("128aab5d3679a1f7601e3bdf94ced1f43e491f544767e18a4873f397b08a2b61"),
+				Hex.decode("5897b65da3b595a813d0fdcc75c895dc531be76a03518b044daaa0f2e4689e00"),
+			},
+			Hex.decode("3377e01eab42db296b512293120c6cee72b6ecf9f9205760bd9ff11fb3cb2c4b"),
+			Hex.decode("7f95890f33efebd1044d382a01b1bee0900fb6116f94688d487c6c7b9c8371f6")
+		),
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_",
+			"abcdef0123456789",
+			new byte[][]{
+				Hex.decode("ea67a7c02f2cd5d8b87715c169d055a22520f74daeb080e6180958380e2f98b9"),
+				Hex.decode("7434d0d1a500d38380d1f9615c021857ac8d546925f5f2355319d823a478da18"),
+			},
+			Hex.decode("bac54083f293f1fe08e4a70137260aa90783a5cb84d3f35848b324d0674b0e3a"),
+			Hex.decode("4436476085d4c3c4508b60fcf4389c40176adce756b398bdee27bca19758d828")
+		),
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_",
+			"q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+			new byte[][]{
+				Hex.decode("eda89a5024fac0a8207a87e8cc4e85aa3bce10745d501a30deb87341b05bcdf5"),
+				Hex.decode("dfe78cd116818fc2c16f3837fedbe2639fab012c407eac9dfe9245bf650ac51d"),
+			},
+			Hex.decode("e2167bc785333a37aa562f021f1e881defb853839babf52a7f72b102e41890e9"),
+			Hex.decode("f2401dd95cc35867ffed4f367cd564763719fbc6a53e969fb8496a1e6685d873")
+		),
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_",
+			"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			new byte[][]{
+				Hex.decode("8d862e7e7e23d7843fe16d811d46d7e6480127a6b78838c277bca17df6900e9f"),
+				Hex.decode("68071d2530f040f081ba818d3c7188a94c900586761e9115efa47ae9bd847938"),
+			},
+			Hex.decode("e3c8d35aaaf0b9b647e88a0a0a7ee5d5bed5ad38238152e4e6fd8c1f8cb7c998"),
+			Hex.decode("8446eeb6181bf12f56a9d24e262221cc2f0c4725c7e3803024b5888ee5823aa6")
+		),
+	};
+
+	public static final RFC9830TestVector[] Secp256k1EncodeToCurveTestVectors = new RFC9830TestVector[]{
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_NU_",
+			"",
+			new byte[][]{
+				Hex.decode("0137fcd23bc3da962e8808f97474d097a6c8aa2881fceef4514173635872cf3b"),
+			},
+			Hex.decode("a4792346075feae77ac3b30026f99c1441b4ecf666ded19b7522cf65c4c55c5b"),
+			Hex.decode("62c59e2a6aeed1b23be5883e833912b08ba06be7f57c0e9cdc663f31639ff3a7")
+		),
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_NU_",
+			"abc",
+			new byte[][]{
+				Hex.decode("e03f894b4d7caf1a50d6aa45cac27412c8867a25489e32c5ddeb503229f63a2e"),
+			},
+			Hex.decode("3f3b5842033fff837d504bb4ce2a372bfeadbdbd84a1d2b678b6e1d7ee426b9d"),
+			Hex.decode("902910d1fef15d8ae2006fc84f2a5a7bda0e0407dc913062c3a493c4f5d876a5")
+		),
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_NU_",
+			"abcdef0123456789",
+			new byte[][]{
+				Hex.decode("e7a6525ae7069ff43498f7f508b41c57f80563c1fe4283510b322446f32af41b"),
+			},
+			Hex.decode("07644fa6281c694709f53bdd21bed94dab995671e4a8cd1904ec4aa50c59bfdf"),
+			Hex.decode("c79f8d1dad79b6540426922f7fbc9579c3018dafeffcd4552b1626b506c21e7b")
+		),
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_NU_",
+			"q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+			new byte[][]{
+				Hex.decode("d97cf3d176a2f26b9614a704d7d434739d194226a706c886c5c3c39806bc323c"),
+			},
+			Hex.decode("b734f05e9b9709ab631d960fa26d669c4aeaea64ae62004b9d34f483aa9acc33"),
+			Hex.decode("03fc8a4a5a78632e2eb4d8460d69ff33c1d72574b79a35e402e801f2d0b1d6ee")
+		),
+		new RFC9830TestVector(
+			"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_NU_",
+			"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			new byte[][]{
+				Hex.decode("a9ffbeee1d6e41ac33c248fb3364612ff591b502386c1bf6ac4aaf1ea51f8c3b"),
+			},
+			Hex.decode("17d22b867658977b5002dbe8d0ee70a8cfddec3eec50fb93f36136070fd9fa6c"),
+			Hex.decode("e9178ff02f4dab73480f8dd590328aea99856a7b6cc8e5a6cdf289ecc2a51718")
+		),
+	};
+
+
+
 	/**
 	 *
 	 * @param htc
 	 * @param vectors
 	 */
-	private void runRFC9830Vectors(ECCurveHtCHasher htc, RFC9830TestVector[] vectors, String mode) {
-		for (final var vector : vectors) {
+	private void runRFC9830Vectors(ECCurveHtCHasher htc, RFC9830TestVector[] vectors) {
+		for (int tidx = 0; tidx < vectors.length; tidx++) {
+			final var vector = vectors[tidx];
+			final var mode = StringUtils.substring(vector.DST(), -4);
 			final var msg = vector.msg().getBytes(StandardCharsets.UTF_8);
 			final var DST = vector.DST().getBytes(StandardCharsets.UTF_8);
 
 			// First check hashToField implementation used by either modes internally
-			final var u = htc.hashToField(msg, DST, vector.u().length);
-			for (int i = 0; i < u.length; i++) {
-				final int idx = i;
-				assertArrayEquals(u[i][0].getEncoded(), vector.u()[i], () -> String.format("%s-%s u[%d] is invalid", htc.getCurveName(), mode, idx));
+			if (vector.DST().contains("secp256k1")) {
+				// Not supported for secp256k1, throws exception
+				assertThrows(UnsupportedOperationException.class, () -> htc.hashToField(msg, DST, vector.u().length));
+			} else {
+				final var u = assertDoesNotThrow(() -> htc.hashToField(msg, DST, vector.u().length));
+				for (int i = 0; i < u.length; i++) {
+					final int idx = i;
+					assertArrayEquals(u[i][0].getEncoded(), vector.u()[i], () -> String.format("%s-%s u[%d] is invalid", htc.getCurveName(), mode, idx));
+				}
 			}
 
+			final var cidx = tidx;
 			switch (mode) {
-			case "HashToCurve": {
+			case "_RO_": {
 				final var p = htc.hashToCurve(msg, DST);
-				assertArrayEquals(p.getAffineXCoord().getEncoded(), vector.px(), () -> String.format("%s-%s P.x is invalid", htc.getCurveName(), mode));
-				assertArrayEquals(p.getAffineYCoord().getEncoded(), vector.py(), () -> String.format("%s-%s P.y is invalid", htc.getCurveName(), mode));
+				assertArrayEquals(p.getAffineXCoord().getEncoded(), vector.px(), () -> String.format("#%d %s-%s P.x is invalid", cidx, htc.getCurveName(), mode));
+				assertArrayEquals(p.getAffineYCoord().getEncoded(), vector.py(), () -> String.format("#%d %s-%s P.y is invalid", cidx, htc.getCurveName(), mode));
 				break;
 			}
-			case "EncodeToCurve": {
+			case "_NU_": {
 				final var p = htc.encodeToCurve(msg, DST);
-				assertArrayEquals(p.getAffineXCoord().getEncoded(), vector.px(), () -> String.format("%s-%s P.x is invalid", htc.getCurveName(), mode));
-				assertArrayEquals(p.getAffineYCoord().getEncoded(), vector.py(), () -> String.format("%s-%s P.y is invalid", htc.getCurveName(), mode));
+				assertArrayEquals(p.getAffineXCoord().getEncoded(), vector.px(), () -> String.format("#%d %s-%s P.x is invalid", cidx, htc.getCurveName(), mode));
+				assertArrayEquals(p.getAffineYCoord().getEncoded(), vector.py(), () -> String.format("#%d %s-%s P.y is invalid", cidx, htc.getCurveName(), mode));
 				break;
 			}
 			default:
@@ -354,48 +469,52 @@ public class ECCurveHtCHasherTest {
 		}
 	}
 
-	private void runRFC9830HashToCurveVectors(ECCurveHtCHasher htc, RFC9830TestVector[] vectors) {
-		runRFC9830Vectors(htc, vectors, "HashToCurve");
-	}
-
-	private void runRFC9830EncodeToCurveVectors(ECCurveHtCHasher htc, RFC9830TestVector[] vectors) {
-		runRFC9830Vectors(htc, vectors, "EncodeToCurve");
-	}
-
 
 	@Test
 	void testP256HashToCurveRFC9830() {
 		final var htc = ECCurveHtCHasher.createP256();
-		runRFC9830HashToCurveVectors(htc, P256HashToCurveTestVectors);
+		runRFC9830Vectors(htc, P256HashToCurveTestVectors);
 	}
 
 	@Test
 	void testP256EncodeToCurveRFC9830() {
 		final var htc = ECCurveHtCHasher.createP256();
-		runRFC9830EncodeToCurveVectors(htc, P256EncodeToCurveTestVectors);
+		runRFC9830Vectors(htc, P256EncodeToCurveTestVectors);
 	}
 
 	@Test
 	void testP384HashToCurveRFC9830() {
 		final var htc = ECCurveHtCHasher.createP384();
-		runRFC9830HashToCurveVectors(htc, P384HashToCurveTestVectors);
+		runRFC9830Vectors(htc, P384HashToCurveTestVectors);
 	}
 
 	@Test
 	void testP384EncodeToCurveRFC9830() {
 		final var htc = ECCurveHtCHasher.createP384();
-		runRFC9830EncodeToCurveVectors(htc, P384EncodeToCurveTestVectors);
+		runRFC9830Vectors(htc, P384EncodeToCurveTestVectors);
 	}
 
 	@Test
 	void testP521HashToCurveRFC9830() {
 		final var htc = ECCurveHtCHasher.createP521();
-		runRFC9830HashToCurveVectors(htc, P521HashToCurveTestVectors);
+		runRFC9830Vectors(htc, P521HashToCurveTestVectors);
 	}
 
 	@Test
 	void testP521EncodeToCurveRFC9830() {
 		final var htc = ECCurveHtCHasher.createP521();
-		runRFC9830EncodeToCurveVectors(htc, P521EncodeToCurveTestVectors);
+		runRFC9830Vectors(htc, P521EncodeToCurveTestVectors);
+	}
+
+	@Test
+	void testSecp256k1HashToCurveRFC9830() {
+		final var htc = ECCurveHtCHasher.createSecp256k1();
+		runRFC9830Vectors(htc, Secp256k1HashToCurveTestVectors);
+	}
+
+	@Test
+	void testSecp256k1EncodeToCurveRFC9830() {
+		final var htc = ECCurveHtCHasher.createSecp256k1();
+		runRFC9830Vectors(htc, Secp256k1EncodeToCurveTestVectors);
 	}
 }
