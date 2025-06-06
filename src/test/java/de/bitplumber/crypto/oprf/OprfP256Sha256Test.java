@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-import de.bitplumber.crypto.oprf.p256.OprfP256Sha256;
-
 class OprfP256Sha256Test {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] output) {}
@@ -39,7 +37,7 @@ class OprfP256Sha256Test {
 
 	@Test
 	void testRFC9497TestVectors() {
-		final var oprf = new OprfP256Sha256();
+		final var oprf = ECCurveOprf.createP256();
 
 		for (final var vector : RFC9497TestVectors) {
 			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
