@@ -1,55 +1,23 @@
 package de.bitplumber.crypto.oprf.p521;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
-import org.bouncycastle.util.Bytes;
 
+import de.bitplumber.crypto.h2c.ECCurveHasher;
 import de.bitplumber.crypto.oprf.KeyPair;
 import de.bitplumber.crypto.oprf.Labels;
 
 public abstract class AbstractP521Sha512 {
 	public static final String SUITE_ID = "P521-SHA512";
-	protected static final int HASH_OUTPUT_SIZE = 64;
-	protected static final int HASH_BLOCK_SIZE = 128;
 	public static final int ELEMENT_SIZE = 67;
 	public static final int SCALAR_SIZE = 66;
 
 	protected abstract byte[] context();
-
-	protected byte[] expandMessageXMD(byte[] msg, byte[] dst, int lengthInBytes) {
-		if (dst.length > 255) {
-			dst = hash(Arrays.concatenate("H2C-OVERSIZE-DST-".getBytes(StandardCharsets.UTF_8), dst));
-		}
-
-		final var ell = Math.ceilDiv(lengthInBytes, HASH_OUTPUT_SIZE);
-		if (lengthInBytes > 65535 || ell > 255) throw new IllegalArgumentException("expand_message_xmd: Invalid lengthInBytes");
-
-		final var dstPrime = Arrays.concatenate(dst, I2OSP(dst.length, 1));
-		final var lengthInBytesStr = I2OSP(lengthInBytes, 2);
-		final var zPad = I2OSP(0, HASH_BLOCK_SIZE);
-
-		final var b = new byte[ell][];
-		final var b0 = hash(Arrays.concatenate(new byte[][]{ zPad, msg, lengthInBytesStr, I2OSP(0, 1), dstPrime }));
-		b[0] = hash(Arrays.concatenate(new byte[][]{ b0, I2OSP(1, 1), dstPrime }));
-
-		if (ell > 1) {
-			final var tmp = new byte[HASH_OUTPUT_SIZE];
-			for (int i = 1; i < ell; i++) {
-				Bytes.xor(b0.length, b0, b[i - 1], tmp);
-				b[i] = hash(Arrays.concatenate(tmp, I2OSP(i + 1, 1), dstPrime));
-			}
-		}
-
-		final var output = Arrays.concatenate(b);
-		return Arrays.copyOfRange(output, 0, lengthInBytes);
-	}
 
 	public byte[] encodeElement(P521GroupElement element) {
 		return element.toByteArray();
@@ -67,15 +35,15 @@ public abstract class AbstractP521Sha512 {
 		return P521FieldElement.fromCanonicalBytes(input);
 	}
 
-	protected P521GroupElement hashToGroup(byte[] hash, byte[] customDST) {
-		final var dst = ObjectUtils.defaultIfNull(customDST, Arrays.concatenate(Labels.HASH_TO_GROUP, context()));
-		return P521GroupElement.hashToGroup(hash, dst);
+	protected P521GroupElement hashToGroup(byte[] msg, byte[] customDST) {
+		final var dst = Objects.requireNonNullElseGet(customDST, () -> Arrays.concatenate(Labels.HASH_TO_GROUP, context()));
+		return P521GroupElement.hashToGroup(msg, dst);
 	}
 
-	protected P521FieldElement hashToScalar(byte[] hash, byte[] customDST) {
-		final var dst = ObjectUtils.defaultIfNull(customDST, Arrays.concatenate(Labels.HASH_TO_SCALAR, context()));
-		final var uniformBytes = expandMessageXMD(hash, dst, 98);
-		return P521FieldElement.fromBytesModOrderWide(uniformBytes);
+	protected P521FieldElement hashToScalar(byte[] msg, byte[] customDST) {
+		final var dst = Objects.requireNonNullElseGet(customDST, () -> Arrays.concatenate(Labels.HASH_TO_SCALAR, context()));
+		final var s = ECCurveHasher.createP521().expandMessage(msg, dst, 98);
+		return P521FieldElement.fromBytesModOrderWide(s);
 	}
 
 	public P521FieldElement randomScalar() {
@@ -90,7 +58,7 @@ public abstract class AbstractP521Sha512 {
 	}
 
 	public KeyPair deriveKeypair(byte[] seed, byte[] info) throws Exception {
-		final var nullSafeInfo = ArrayUtils.nullToEmpty(info);
+		final var nullSafeInfo = Objects.requireNonNullElseGet(info, () -> new byte[]{});
 		final var deriveInput = Arrays.concatenate(seed, I2OSP(nullSafeInfo.length, 2), nullSafeInfo);
 		final var deriveDST = Arrays.concatenate(Labels.DERIVE_KEYPAIR, context());
 
@@ -193,7 +161,7 @@ public abstract class AbstractP521Sha512 {
 		final var M = MZ.M();
 		final var Z = MZ.Z();
 
-		final var r = ObjectUtils.getIfNull(proofRandomScalar, () -> randomScalar());
+		final var r = Objects.requireNonNullElseGet(proofRandomScalar, () -> randomScalar());
 		final var t2 = A.multiply(r);
 		final var t3 = M.multiply(r);
 

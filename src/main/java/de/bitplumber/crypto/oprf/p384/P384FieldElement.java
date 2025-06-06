@@ -40,8 +40,8 @@ public class P384FieldElement implements FieldElement {
 		return new P384FieldElement(value);
     }
 
-	public static P384FieldElement fromBytesModOrderWide(byte[] input) {
-        final var value = BigIntegers.fromUnsignedByteArray(input).mod(curve.getOrder());
+	public static P384FieldElement fromBytesModOrderWide(byte[] uniformBytes) {
+        final var value = BigIntegers.fromUnsignedByteArray(uniformBytes).mod(curve.getOrder());
         if (!curve.isValidFieldElement(value)) throw new IllegalArgumentException("Invalid field element");
 		return new P384FieldElement(value);
 	}

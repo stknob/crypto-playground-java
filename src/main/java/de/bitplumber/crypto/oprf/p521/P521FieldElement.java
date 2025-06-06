@@ -40,8 +40,8 @@ public class P521FieldElement implements FieldElement {
 		return new P521FieldElement(value);
     }
 
-	public static P521FieldElement fromBytesModOrderWide(byte[] input) {
-        final var value = BigIntegers.fromUnsignedByteArray(input).mod(curve.getOrder());
+	public static P521FieldElement fromBytesModOrderWide(byte[] uniformBytes) {
+        final var value = BigIntegers.fromUnsignedByteArray(uniformBytes).mod(curve.getOrder());
         if (!curve.isValidFieldElement(value)) throw new IllegalArgumentException("Invalid field element");
 		return new P521FieldElement(value);
 	}

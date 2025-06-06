@@ -16,9 +16,6 @@ public class P256FieldElement implements FieldElement {
     private static final ECCurve curve = curveSpec.getCurve();
 	private final ECFieldElement value;
 
-	protected static final int HASH_OUTPUT_SIZE = 32;
-	protected static final int HASH_BLOCK_SIZE = 64;
-
 	public static final P256FieldElement ZERO = new P256FieldElement(BigInteger.ZERO);
 	public static final P256FieldElement ONE  = new P256FieldElement(BigInteger.ONE);
 	public static final BigInteger ORDER = curve.getField().getCharacteristic();
@@ -43,8 +40,8 @@ public class P256FieldElement implements FieldElement {
 		return new P256FieldElement(value);
     }
 
-	public static P256FieldElement fromBytesModOrderWide(byte[] input) {
-        final var value = BigIntegers.fromUnsignedByteArray(input).mod(curve.getOrder());
+	public static P256FieldElement fromBytesModOrderWide(byte[] uniformBytes) {
+        final var value = BigIntegers.fromUnsignedByteArray(uniformBytes).mod(curve.getOrder());
         if (!curve.isValidFieldElement(value)) throw new IllegalArgumentException("Invalid field element");
 		return new P256FieldElement(value);
 	}
