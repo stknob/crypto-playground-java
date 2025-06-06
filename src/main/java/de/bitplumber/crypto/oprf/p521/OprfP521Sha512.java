@@ -3,7 +3,6 @@ package de.bitplumber.crypto.oprf.p521;
 import java.nio.charset.StandardCharsets;
 
 import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
 
 import de.bitplumber.crypto.oprf.Labels;
 import de.bitplumber.crypto.oprf.Modes;
@@ -48,8 +47,6 @@ public class OprfP521Sha512 extends AbstractP521Sha512 implements Oprf<P521Field
 		final var n = evaluatedElement.multiply(invBlind);
 		final var unblindedElement = encodeElement(n);
 
-		System.err.printf("finalize n = %s\n", Hex.toHexString(n.toByteArray()));
-
 		return hash(Arrays.concatenate(new byte[][]{
 			I2OSP(input.length, 2), input,
 			I2OSP(unblindedElement.length, 2), unblindedElement,
@@ -65,8 +62,6 @@ public class OprfP521Sha512 extends AbstractP521Sha512 implements Oprf<P521Field
 		final var skS = decodeScalar(serverSecretKey);
 		final var evaluatedElement = inputElement.multiply(skS);
 		final var issuedElement = encodeElement(evaluatedElement);
-
-		System.err.printf("evaluate e = %s\n", Hex.toHexString(evaluatedElement.toByteArray()));
 
 		return hash(Arrays.concatenate(new byte[][]{
 			I2OSP(input.length, 2), input,
