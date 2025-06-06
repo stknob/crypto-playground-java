@@ -449,6 +449,15 @@ public class ECCurveHasher {
 		return hashXOF(xof, msgPrime, lengthInBytes);
 	}
 
+	/**
+	 *
+	 * @param hashOrXof
+	 * @param msg
+	 * @param dst
+	 * @param lengthInBytes
+	 * @param k
+	 * @return
+	 */
 	protected byte[] expandMessage(ExtendedDigest hashOrXof, byte[] msg, byte[] dst, int lengthInBytes, int k) {
 		if (hashOrXof instanceof Xof xof) {
 			return expandMessageXOF(xof, msg, dst, lengthInBytes, k);
@@ -552,5 +561,21 @@ public class ECCurveHasher {
 
 		if (!q.isValid()) throw new IllegalStateException("EncodeToCurve Q invalid");
 		return clearCofactor(curve, q);
+	}
+
+
+	/**
+	 *
+	 * @param msg
+	 * @param dst
+	 * @param lengthInBytes
+	 * @return
+	 */
+	public byte[] expandMessage(byte[] msg, byte[] dst, int lengthInBytes) {
+		if (hash instanceof Xof xof) {
+			return expandMessageXOF(xof, msg, dst, lengthInBytes, k);
+		} else {
+			return expandMessageXMD(hash, msg, dst, lengthInBytes);
+		}
 	}
 }
