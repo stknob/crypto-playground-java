@@ -2,9 +2,10 @@ package de.bitplumber.crypto.h2c;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.bouncycastle.crypto.ExtendedDigest;
+import org.bouncycastle.crypto.Xof;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.digests.SHA384Digest;
 import org.bouncycastle.crypto.digests.SHA512Digest;
@@ -30,44 +31,63 @@ public class ECCurveHasher {
 
 	protected final byte[] hashToCurveDST;
 	protected final byte[] encodeToCurveDST;
-	protected final ExtendedDigest hash;
-	protected final int hashOutputSize;
-	protected final int hashBlockSize;
+	protected final ExtendedDigest hash;	// Either a Xof or ExtendedDigest
+	protected final boolean useXof;			// Use expandMessageXof
 	protected final int m;
 	protected final int k;
 
-	protected ECCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final ECCurve isogenyCurve, final int Z, final int m, final int k) {
+	/**
+	 * Constructor for curves that need an isogeny mapping
+	 * @param curveName
+	 * @param hash
+	 * @param hashToCurveDST
+	 * @param encodeToCurveDST
+	 * @param isogenyCurve
+	 * @param Z
+	 * @param m
+	 * @param k
+	 */
+	protected ECCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final ECCurve isogenyCurve,
+		final int Z, final int m, final int k)
+	{
 		// Curve and parameters
 		this.curveSpec = ECNamedCurveTable.getParameterSpec(curveName);
 		this.curve = curveSpec.getCurve();
 		this.isogenyCurve = isogenyCurve;				// Optional: isogeny curve parameters
 
 		// Either use isogeny curve parameters for operations or main curve
-		final var htcCurve = ObjectUtils.defaultIfNull(isogenyCurve, curve);
+		final var htcCurve = Objects.requireNonNullElse(isogenyCurve, curve);
 		this.q = htcCurve.getField().getCharacteristic();	// Field modulus
 		this.Z = htcCurve.fromBigInteger(BigInteger.valueOf(Z).mod(q));
-		// this.H = htcCurve.getCofactor();
 		this.G = htcCurve.getOrder();						// Curve order
 		this.A = htcCurve.getA();
 		this.B = htcCurve.getB();
 
-		this.m = m;		// Same as curve.getField().getDimenstions() ??
-		this.k = k;		// Security level in bits
+		this.m = m;		// Curve field dimensions(?)
+		this.k = k;		// Curve security level in bits
 
-		// Hash and parameters
-		this.hash = hash;
-		this.hashOutputSize = hash.getDigestSize();
-		this.hashBlockSize = hash.getByteLength();
-
-		// Misc parameters
+		// hashToField
+		this.hash   = hash;
+		this.useXof = hash instanceof Xof;
 		this.hashToCurveDST = hashToCurveDST.getBytes(StandardCharsets.UTF_8);
 		this.encodeToCurveDST = encodeToCurveDST.getBytes(StandardCharsets.UTF_8);
 	}
 
-	protected ECCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final int Z, final int m, final int k) {
+	/**
+	 * Constructor for regular weierstrass curves
+	 * @param curveName
+	 * @param hash
+	 * @param hashToCurveDST
+	 * @param encodeToCurveDST
+	 * @param Z
+	 * @param m
+	 * @param k
+	 */
+	protected ECCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST,
+		final int Z, final int m, final int k)
+	{
 		this(curveName, hash, hashToCurveDST, encodeToCurveDST, null, Z, m, k);
 	}
-
 
 	/**
 	 * Create a hasher instance for the P256-SHA256 suite
@@ -173,20 +193,6 @@ public class ECCurveHasher {
 	}
 
 	/**
-	 * @return
-	 */
-	public int getHashOutputSize() {
-		return this.hashOutputSize;
-	}
-
-	/**
-	 * @return
-	 */
-	public int getHashBlockSize() {
-		return this.hashBlockSize;
-	}
-
-	/**
 	 * Get the curve security level 'k'
 	 * @return
 	 */
@@ -283,7 +289,7 @@ public class ECCurveHasher {
 		return new SqrtRatioResult(isQR, y);
 	}
 
-	protected int sgn0_m_eq_1(ECFieldElement x) {
+	protected int sgn0_m_eq_1(ECFieldElement x) {	// NOSONAR
 		return x.toBigInteger().mod(BigInteger.TWO).intValue();
 	}
 
@@ -377,44 +383,78 @@ public class ECCurveHasher {
 		return p.multiply(curve.getCofactor());
 	}
 
-	protected byte[] digest(byte[] input) {
-		final var output = new byte[hashOutputSize];
-		hash.reset();
-		hash.update(input, 0, input.length);
-		hash.doFinal(output, 0);
+	protected byte[] hashXMD(ExtendedDigest md, byte[] input) {
+		final var output = new byte[md.getDigestSize()];
+		md.reset();
+		md.update(input, 0, input.length);
+		md.doFinal(output, 0);
 		return output;
 	}
 
-	protected byte[] I2OSP(long input, int size) {
+	protected byte[] hashXOF(Xof xof, byte[] input, int lengthInBytes) {
+		final var output = new byte[lengthInBytes];
+		xof.reset();
+		xof.update(input, 0, input.length);
+		xof.doFinal(output, 0);
+		return output;
+	}
+
+	protected byte[] I2OSP(long input, int size) {	// NOSONAR
 		return BigIntegers.asUnsignedByteArray(size, BigInteger.valueOf(input));
 	}
 
-	protected byte[] expandMessageXMD(byte[] msg, byte[] dst, int lengthInBytes) {
+	protected byte[] expandMessageXMD(ExtendedDigest xmd, byte[] msg, byte[] dst, int lengthInBytes) {
+		final var hashOutputSize = xmd.getDigestSize();
+		final var hashBlockSize  = xmd.getByteLength();
 		if (dst.length > 255) {
-			dst = digest(Arrays.concatenate("H2C-OVERSIZE-DST-".getBytes(StandardCharsets.UTF_8), dst));
+			dst = hashXMD(xmd, Arrays.concatenate("H2C-OVERSIZE-DST-".getBytes(StandardCharsets.UTF_8), dst));
 		}
 
 		final var ell = Math.ceilDiv(lengthInBytes, hashOutputSize);
-		if (lengthInBytes > 65535 || ell > 255) throw new IllegalArgumentException("expand_message_xmd: Invalid lengthInBytes");
+		if (lengthInBytes > 65535 || ell > 255) {
+			throw new IllegalArgumentException("expand_message_xmd: Invalid lengthInBytes");
+		}
 
 		final var dstPrime = Arrays.concatenate(dst, I2OSP(dst.length, 1));
 		final var lengthInBytesStr = I2OSP(lengthInBytes, 2);
 		final var zPad = I2OSP(0, hashBlockSize);
 
 		final var b = new byte[ell][];
-		final var b0 = digest(Arrays.concatenate(new byte[][]{ zPad, msg, lengthInBytesStr, I2OSP(0, 1), dstPrime }));
-		b[0] = digest(Arrays.concatenate(new byte[][]{ b0, I2OSP(1, 1), dstPrime }));
+		final var b0 = hashXMD(xmd, Arrays.concatenate(new byte[][]{ zPad, msg, lengthInBytesStr, I2OSP(0, 1), dstPrime }));
+		b[0] = hashXMD(xmd, Arrays.concatenate(new byte[][]{ b0, I2OSP(1, 1), dstPrime }));
 
 		if (ell > 1) {
 			final var tmp = new byte[hashOutputSize];
 			for (int i = 1; i < ell; i++) {
 				Bytes.xor(b0.length, b0, b[i - 1], tmp);
-				b[i] = digest(Arrays.concatenate(tmp, I2OSP(i + 1, 1), dstPrime));
+				b[i] = hashXMD(xmd, Arrays.concatenate(tmp, I2OSP(i + 1l, 1), dstPrime));
 			}
 		}
 
 		final var output = Arrays.concatenate(b);
 		return Arrays.copyOfRange(output, 0, lengthInBytes);
+	}
+
+	protected byte[] expandMessageXOF(Xof xof, byte[] msg, byte[] dst, int lengthInBytes, int k) {
+		if (dst.length > 255) {
+			dst = hashXOF(xof, Arrays.concatenate("H2C-OVERSIZE-DST-".getBytes(StandardCharsets.UTF_8), dst), Math.ceilDiv(2 * k, 8));
+		}
+
+		if (lengthInBytes > 65535) {
+			throw new IllegalArgumentException("expand_message_xof: Invalid lengthInBytes");
+		}
+
+		final var dstPrime = Arrays.concatenate(dst, I2OSP(dst.length, 1));
+		final var msgPrime = Arrays.concatenate(msg, I2OSP(lengthInBytes, 2), dstPrime);
+		return hashXOF(xof, msgPrime, lengthInBytes);
+	}
+
+	protected byte[] expandMessage(ExtendedDigest hashOrXof, byte[] msg, byte[] dst, int lengthInBytes, int k) {
+		if (hashOrXof instanceof Xof xof) {
+			return expandMessageXOF(xof, msg, dst, lengthInBytes, k);
+		} else {
+			return expandMessageXMD(hashOrXof, msg, dst, lengthInBytes);
+		}
 	}
 
 	/**
@@ -426,10 +466,10 @@ public class ECCurveHasher {
 	 * @param count
 	 * @return
 	 */
-	protected ECFieldElement[][] hashToField(ECCurve curve, byte[] input, byte[] DST, int m, int k, int count) {
+	protected ECFieldElement[][] hashToField(ECCurve curve, byte[] input, byte[] dst, int m, int k, int count) {
 		final var L = Math.ceilDiv(curve.getFieldSize() + k, 8);
 		final var lengthInBytes = count * m * L;
-		final var uniformBytes = expandMessageXMD(input, DST, lengthInBytes);
+		final var uniformBytes = expandMessage(hash, input, dst, lengthInBytes, k);
 		final var u = new ECFieldElement[count][];
 		for (int i = 0; i < count; i++) {
 			final var e = new ECFieldElement[m];
@@ -447,44 +487,40 @@ public class ECCurveHasher {
 	 *
 	 * @param input
 	 * @param DST
-	 * @param m
-	 * @param k
 	 * @param count
 	 * @return
 	 */
-	protected ECFieldElement[][] hashToField(byte[] input, byte[] DST, int count) {
-		switch (curveSpec.getName()) {
-		case "secp256k1":
+	protected ECFieldElement[][] hashToField(byte[] input, byte[] dst, int count) {
+		Objects.requireNonNull(input, "Parameter 'input' must be non-null");
+		Objects.requireNonNull(dst,   "Parameter 'dst' must be non-null");
+		if (curveSpec.getName().equalsIgnoreCase("secp256k1")) {
 			throw new UnsupportedOperationException("Operation not supported for secp256k1");
-		default:
-			return hashToField(curve, input, DST, m, k, count);
+		} else {
+			return hashToField(curve, input, dst, m, k, count);
 		}
 	}
 
 	/**
 	 * Hash input to a point on the hasher's curve
 	 * @param input The message to map onto the curve
-	 * @param DST Optional: custom domain separation tag (DST)
+	 * @param dst Optional: custom domain separation tag (DST)
 	 * @return
 	 */
-	public ECPoint hashToCurve(byte[] input, byte[] DST) {
-		final var htcDST = ObjectUtils.defaultIfNull(DST, hashToCurveDST);
+	public ECPoint hashToCurve(byte[] input, byte[] dst) {
+		final var htcDST = Objects.requireNonNullElse(dst, hashToCurveDST);
+		Objects.requireNonNull(input, "Parameter 'input' must be non-null");
 
-		final ECPoint q0, q1;
-		switch (curveSpec.getName()) {
-		case "secp256k1": {
+		final ECPoint q0, q1;	// NOSONAR
+		if (curveSpec.getName().equalsIgnoreCase("secp256k1")) {
 			// AB == 0 special case for secp256k1
 			final var u = hashToField(isogenyCurve, input, htcDST, m, k, 2);
 			q0 = isoMap3(mapToCurveSimpleSWU(isogenyCurve, u[0][0]));
 			q1 = isoMap3(mapToCurveSimpleSWU(isogenyCurve, u[1][0]));
-			break;
-		}
-		default: {
+		} else {
 			final var u = hashToField(curve, input, htcDST, m, k, 2);
 			q0 = mapToCurveSimpleSWU(curve, u[0][0]);
 			q1 = mapToCurveSimpleSWU(curve, u[1][0]);
-			break;
-		}}
+		}
 
 		final var r = q0.add(q1);
 		if (!r.isValid()) throw new IllegalStateException("HashToCurve R invalid");
@@ -498,24 +534,21 @@ public class ECCurveHasher {
 	/**
 	 * Hash input to a point on the hasher's curve
 	 * @param input The message to map onto the curve
-	 * @param DST Optional: custom domain separation tag (DST)
+	 * @param dst Optional: custom domain separation tag (DST)
 	 * @return
 	 */
-	public ECPoint encodeToCurve(byte[] input, byte[] DST) {
-		final var etcDST = ObjectUtils.defaultIfNull(DST, encodeToCurveDST);
+	public ECPoint encodeToCurve(byte[] input, byte[] dst) {
+		final var etcDST = Objects.requireNonNullElse(dst, encodeToCurveDST);
+		Objects.requireNonNull(input, "Parameter 'input' must be non-null");
 
 		final ECPoint q;
-		switch (curveSpec.getName()) {
-		case "secp256k1": {
+		if (curveSpec.getName().equalsIgnoreCase("secp256k1")) {
 			final var u = hashToField(isogenyCurve, input, etcDST, m, k, 1);
 			q = isoMap3(mapToCurveSimpleSWU(isogenyCurve, u[0][0]));
-			break;
-		}
-		default: {
+		} else {
 			final var u = hashToField(curve, input, etcDST, m, k, 1);
 			q = mapToCurveSimpleSWU(curve, u[0][0]);
-			break;
-		}}
+		}
 
 		if (!q.isValid()) throw new IllegalStateException("EncodeToCurve Q invalid");
 		return clearCofactor(curve, q);

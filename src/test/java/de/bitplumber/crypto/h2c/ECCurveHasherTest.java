@@ -10,8 +10,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-import de.bitplumber.crypto.h2c.ECCurveHasher;
-
 public class ECCurveHasherTest {
 	public static final record RFC9830TestVector(String DST, String msg, byte[][] u, byte[] px, byte[] py) {}
 	/**
