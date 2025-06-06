@@ -91,8 +91,8 @@ public class Server extends AbstractRistretto255Sha512 {
 	 * Server - Generate a random keypair
 	 * @return
 	 */
-	public KeyPair randomKeypair() {
-		return oprf.randomKeypair();
+	public KeyPair randomKeyPair() {
+		return oprf.randomKeyPair();
 	}
 
 	/**
@@ -106,7 +106,7 @@ public class Server extends AbstractRistretto255Sha512 {
 	 */
 	public RegistrationResponse createRegistrationResponse(RegistrationRequest regRequest, byte[] serverPublicKey, CredentialIdentifier credentialIdentifier, byte[] oprfSeed) throws Exception {
 		final var seed = expand(oprfSeed, Arrays.concatenate(credentialIdentifier.toByteArray(), Labels.OPRF_KEY), N_OK);
-		final var serverKeypair = oprf.deriveKeypair(seed, ObjectUtils.defaultIfNull(params.customDeriveKeypairLabel(), Labels.NOPAQUE_DERIVE_KEYPAIR));
+		final var serverKeypair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveKeypairLabel(), Labels.NOPAQUE_DERIVE_KEYPAIR));
 
 		final var blindedElement = oprf.decodeElement(regRequest.blindedElement());
 		final var evaluatedElement = oprf.blindEvaluate(serverKeypair.secretKey(), blindedElement);
@@ -143,7 +143,7 @@ public class Server extends AbstractRistretto255Sha512 {
 	 */
 	public RecoverResponse createRecoverResponse(KeyPair serverKeypair, RegistrationRecord regRecord, CredentialIdentifier credentialIdentifier, byte[] oprfSeed, RecoverRequest ke1) throws Exception {
 		final var seed = expand(oprfSeed, Arrays.concatenate(credentialIdentifier.toByteArray(), Labels.OPRF_KEY), N_OK);
-		final var oprfKey = oprf.deriveKeypair(seed, ObjectUtils.defaultIfNull(params.customDeriveKeypairLabel(), Labels.NOPAQUE_DERIVE_KEYPAIR)).secretKey();
+		final var oprfKey = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveKeypairLabel(), Labels.NOPAQUE_DERIVE_KEYPAIR)).secretKey();
 
 		final var blindedElement = oprf.decodeElement(ke1.blindedMessage());
 		final var evaluatedElement = oprf.blindEvaluate(oprfKey, blindedElement);

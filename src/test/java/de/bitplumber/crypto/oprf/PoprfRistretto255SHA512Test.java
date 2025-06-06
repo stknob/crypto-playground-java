@@ -53,7 +53,7 @@ class PoprfRistretto255SHA512Test {
 				.withBlindRandomScalar(vector.blind())
 				.withProofRandomScalar(vector.proofRandomScalar()));
 
-			final var keypair = assertDoesNotThrow(() -> poprf.deriveKeypair(vector.seed(), vector.keyInfo()));
+			final var keypair = assertDoesNotThrow(() -> poprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
 			assertArrayEquals(vector.publicKey(), keypair.publicKey(), "public key");
 

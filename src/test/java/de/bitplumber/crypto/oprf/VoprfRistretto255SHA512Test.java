@@ -52,7 +52,7 @@ class VoprfRistretto255SHA512Test {
 			final var voprf = new VoprfRistretto255Sha512(new VoprfRistretto255Sha512.VoprfParameter()
 				.withBlindRandomScalar(vector.blind())
 				.withProofRandomScalar(vector.proofRandomScalar()));
-			final var keypair = assertDoesNotThrow(() -> voprf.deriveKeypair(vector.seed(), vector.keyInfo()));
+			final var keypair = assertDoesNotThrow(() -> voprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
 			assertArrayEquals(vector.publicKey(), keypair.publicKey(), "public key");
 

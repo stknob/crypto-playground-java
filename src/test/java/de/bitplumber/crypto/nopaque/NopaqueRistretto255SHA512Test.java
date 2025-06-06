@@ -141,7 +141,7 @@ class NopaqueRistretto255SHA512Test {
 		final var registerResult = assertDoesNotThrow(() -> client.createRegistrationRequest(password));
 		final var registerRequest = registerResult.request();
 
-		final var serverKeypair = server.randomKeypair();
+		final var serverKeypair = server.randomKeyPair();
 		final var credentialId = CredentialIdentifier.fromBytes(client.randomSecret());
 		final var oprfSeed = server.randomSeed();
 		final var reqResponse = assertDoesNotThrow(() -> server.createRegistrationResponse(RegistrationRequest.fromBytes(registerRequest), serverKeypair.publicKey(), credentialId, oprfSeed));

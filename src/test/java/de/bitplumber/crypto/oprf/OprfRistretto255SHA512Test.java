@@ -42,7 +42,7 @@ class OprfRistretto255SHA512Test {
 		final var oprf = new OprfRistretto255Sha512();
 
 		for (final var vector : RFC9497TestVectors) {
-			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeypair(vector.seed(), vector.keyInfo()));
+			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey());
 
 			final var blindResult = assertDoesNotThrow(() -> oprf.blind(vector.input(), vector.blind()));

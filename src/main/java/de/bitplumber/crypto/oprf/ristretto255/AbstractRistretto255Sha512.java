@@ -88,13 +88,13 @@ public abstract class AbstractRistretto255Sha512 {
 		return Scalar.fromBytesModOrderWide(uniformBytes);
 	}
 
-	public KeyPair randomKeypair() {
+	public KeyPair randomKeyPair() {
 		final var secretScalar  = randomScalar();
 		final var publicElement = RistrettoElement.BASEPOINT.multiply(secretScalar);
 		return new KeyPair(secretScalar.toByteArray(), publicElement.compress().toByteArray());
 	}
 
-	public KeyPair deriveKeypair(byte[] seed, byte[] info) throws Exception {
+	public KeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception {
 		final var nullSafeInfo = ArrayUtils.nullToEmpty(info);
 		final var deriveInput = Arrays.concatenate(seed, I2OSP(nullSafeInfo.length, 2), nullSafeInfo);
 		final var deriveDST = Arrays.concatenate(Labels.DERIVE_KEYPAIR, context());

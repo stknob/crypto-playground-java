@@ -42,7 +42,7 @@ class OprfP384Sha384Test {
 		final var oprf = new OprfP384Sha384();
 
 		for (final var vector : RFC9497TestVectors) {
-			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeypair(vector.seed(), vector.keyInfo()));
+			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secretKey");
 
 			final var blindResult = assertDoesNotThrow(() -> oprf.blind(vector.input(), vector.blind()));

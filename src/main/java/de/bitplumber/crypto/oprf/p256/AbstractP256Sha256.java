@@ -51,13 +51,13 @@ public abstract class AbstractP256Sha256 {
 		return P256FieldElement.fromBytesModOrderWide(uniformBytes);
 	}
 
-	public KeyPair randomKeypair() {
+	public KeyPair randomKeyPair() {
 		final var secretScalar  = randomScalar();
 		final var publicElement = P256GroupElement.BASEPOINT.multiply(secretScalar);
 		return new KeyPair(secretScalar.toByteArray(), publicElement.toByteArray());
 	}
 
-	public KeyPair deriveKeypair(byte[] seed, byte[] info) throws Exception {
+	public KeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception {
 		final var nullSafeInfo = Objects.requireNonNullElseGet(info, () -> new byte[]{});
 		final var deriveInput = Arrays.concatenate(seed, I2OSP(nullSafeInfo.length, 2), nullSafeInfo);
 		final var deriveDST = Arrays.concatenate(Labels.DERIVE_KEYPAIR, context());

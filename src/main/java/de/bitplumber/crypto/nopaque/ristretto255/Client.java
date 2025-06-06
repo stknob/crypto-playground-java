@@ -119,7 +119,7 @@ public class Client extends AbstractRistretto255Sha512 {
 		final var authKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.AUTH_KEY), N_H);
 		final var seed = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.PRIVATE_KEY), N_SEED);
 
-		final var clientKeypair = oprf.deriveKeypair(seed, ObjectUtils.defaultIfNull(params.customDeriveDhKeypairLabel(), Labels.NOPAQUE_DERIVE_DH_KEYPAIR));
+		final var clientKeypair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveDhKeypairLabel(), Labels.NOPAQUE_DERIVE_DH_KEYPAIR));
 		final var cleartextCredentials = createCleartextCredentials(serverPublicKey, clientKeypair.publicKey(), serverIdentity, clientIdentity);
 
 		final var authTag = hmac(authKey, Arrays.concatenate(new byte[][]{
@@ -142,7 +142,7 @@ public class Client extends AbstractRistretto255Sha512 {
 		final var authKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.AUTH_KEY), N_H);
 		final var seed = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.PRIVATE_KEY), N_SEED);
 
-		final var clientKeypair = oprf.deriveKeypair(seed, ObjectUtils.defaultIfNull(params.customDeriveDhKeypairLabel(), Labels.NOPAQUE_DERIVE_DH_KEYPAIR));
+		final var clientKeypair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveDhKeypairLabel(), Labels.NOPAQUE_DERIVE_DH_KEYPAIR));
 		final var cleartextCredentials = createCleartextCredentials(serverPublicKey, clientKeypair.publicKey(), serverIdentity, clientIdentity);
 
 		final var authTag = hmac(authKey, Arrays.concatenate(new byte[][]{

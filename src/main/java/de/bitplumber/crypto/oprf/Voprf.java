@@ -4,8 +4,8 @@ import com.weavechain.curve25519.RistrettoElement;
 import com.weavechain.curve25519.Scalar;
 
 public interface Voprf<S, E, BR, BER, P> {
-	public KeyPair deriveKeypair(byte[] seed, byte[] info) throws Exception;
-	public KeyPair randomKeypair();
+	public KeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception;
+	public KeyPair randomKeyPair();
 
 	public byte[] encodeElement(E element);
 	public E decodeElement(byte[] input) throws Exception;
