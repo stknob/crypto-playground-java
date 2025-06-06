@@ -1,4 +1,4 @@
-package de.bitplumber.crypto.htc;
+package de.bitplumber.crypto.h2c;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -10,7 +10,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-public class ECCurveHtCHasherTest {
+import de.bitplumber.crypto.h2c.ECCurveHasher;
+
+public class ECCurveHasherTest {
 	public static final record RFC9830TestVector(String DST, String msg, byte[][] u, byte[] px, byte[] py) {}
 	/**
 	 *  RFC9830 - J1.1 - P256_XMD:SHA-256_SSWU_RO_
@@ -430,7 +432,7 @@ public class ECCurveHtCHasherTest {
 	 * @param htc
 	 * @param vectors
 	 */
-	private void runRFC9830Vectors(ECCurveHtCHasher htc, RFC9830TestVector[] vectors) {
+	private void runRFC9830Vectors(ECCurveHasher htc, RFC9830TestVector[] vectors) {
 		for (int tidx = 0; tidx < vectors.length; tidx++) {
 			final var vector = vectors[tidx];
 			final var mode = StringUtils.substring(vector.DST(), -4);
@@ -472,49 +474,49 @@ public class ECCurveHtCHasherTest {
 
 	@Test
 	void testP256HashToCurveRFC9830() {
-		final var htc = ECCurveHtCHasher.createP256();
+		final var htc = ECCurveHasher.createP256();
 		runRFC9830Vectors(htc, P256HashToCurveTestVectors);
 	}
 
 	@Test
 	void testP256EncodeToCurveRFC9830() {
-		final var htc = ECCurveHtCHasher.createP256();
+		final var htc = ECCurveHasher.createP256();
 		runRFC9830Vectors(htc, P256EncodeToCurveTestVectors);
 	}
 
 	@Test
 	void testP384HashToCurveRFC9830() {
-		final var htc = ECCurveHtCHasher.createP384();
+		final var htc = ECCurveHasher.createP384();
 		runRFC9830Vectors(htc, P384HashToCurveTestVectors);
 	}
 
 	@Test
 	void testP384EncodeToCurveRFC9830() {
-		final var htc = ECCurveHtCHasher.createP384();
+		final var htc = ECCurveHasher.createP384();
 		runRFC9830Vectors(htc, P384EncodeToCurveTestVectors);
 	}
 
 	@Test
 	void testP521HashToCurveRFC9830() {
-		final var htc = ECCurveHtCHasher.createP521();
+		final var htc = ECCurveHasher.createP521();
 		runRFC9830Vectors(htc, P521HashToCurveTestVectors);
 	}
 
 	@Test
 	void testP521EncodeToCurveRFC9830() {
-		final var htc = ECCurveHtCHasher.createP521();
+		final var htc = ECCurveHasher.createP521();
 		runRFC9830Vectors(htc, P521EncodeToCurveTestVectors);
 	}
 
 	@Test
 	void testSecp256k1HashToCurveRFC9830() {
-		final var htc = ECCurveHtCHasher.createSecp256k1();
+		final var htc = ECCurveHasher.createSecp256k1();
 		runRFC9830Vectors(htc, Secp256k1HashToCurveTestVectors);
 	}
 
 	@Test
 	void testSecp256k1EncodeToCurveRFC9830() {
-		final var htc = ECCurveHtCHasher.createSecp256k1();
+		final var htc = ECCurveHasher.createSecp256k1();
 		runRFC9830Vectors(htc, Secp256k1EncodeToCurveTestVectors);
 	}
 }

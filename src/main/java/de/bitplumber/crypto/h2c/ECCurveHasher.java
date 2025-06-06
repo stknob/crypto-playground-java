@@ -1,4 +1,4 @@
-package de.bitplumber.crypto.htc;
+package de.bitplumber.crypto.h2c;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -17,7 +17,7 @@ import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.Bytes;
 
-public class ECCurveHtCHasher {
+public class ECCurveHasher {
     private final ECNamedCurveParameterSpec curveSpec;
     private final ECCurve curve;
 	private final ECCurve isogenyCurve;
@@ -36,7 +36,7 @@ public class ECCurveHtCHasher {
 	protected final int m;
 	protected final int k;
 
-	protected ECCurveHtCHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final ECCurve isogenyCurve, final int Z, final int m, final int k) {
+	protected ECCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final ECCurve isogenyCurve, final int Z, final int m, final int k) {
 		// Curve and parameters
 		this.curveSpec = ECNamedCurveTable.getParameterSpec(curveName);
 		this.curve = curveSpec.getCurve();
@@ -64,7 +64,7 @@ public class ECCurveHtCHasher {
 		this.encodeToCurveDST = encodeToCurveDST.getBytes(StandardCharsets.UTF_8);
 	}
 
-	protected ECCurveHtCHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final int Z, final int m, final int k) {
+	protected ECCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final int Z, final int m, final int k) {
 		this(curveName, hash, hashToCurveDST, encodeToCurveDST, null, Z, m, k);
 	}
 
@@ -73,8 +73,8 @@ public class ECCurveHtCHasher {
 	 * Create a hasher instance for the P256-SHA256 suite
 	 * @return
 	 */
-	public static ECCurveHtCHasher createP256() {
-		return new ECCurveHtCHasher(
+	public static ECCurveHasher createP256() {
+		return new ECCurveHasher(
 			"secp256r1",
 			new SHA256Digest(),
 			"P256_XMD:SHA-256_SSWU_RO_",
@@ -89,8 +89,8 @@ public class ECCurveHtCHasher {
 	 * Create a hasher instance for the P384-SHA384 suite
 	 * @return
 	 */
-	public static ECCurveHtCHasher createP384() {
-		return new ECCurveHtCHasher(
+	public static ECCurveHasher createP384() {
+		return new ECCurveHasher(
 			"secp384r1",
 			new SHA384Digest(),
 			"P384_XMD:SHA-384_SSWU_RO_",
@@ -105,8 +105,8 @@ public class ECCurveHtCHasher {
 	 * Create a hasher instance for the P521-SHA512 suite
 	 * @return
 	 */
-	public static ECCurveHtCHasher createP521() {
-		return new ECCurveHtCHasher(
+	public static ECCurveHasher createP521() {
+		return new ECCurveHasher(
 			"secp521r1",
 			new SHA512Digest(),
 			"P521_XMD:SHA-512_SSWU_RO_",
@@ -122,7 +122,7 @@ public class ECCurveHtCHasher {
 	 * Missing secp256k1 isogeny parameters taken from https://github.com/armfazh/hash-to-curve-ref/
 	 * @return
 	 */
-	public static ECCurveHtCHasher createSecp256k1() {
+	public static ECCurveHasher createSecp256k1() {
 		final var isogenyCurve = new ECCurve.Fp(
 			new BigInteger("00fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16),
 			new BigInteger("003f8731abdd661adca08a5558f0f5d272e953d363cb6f0e5d405447c01a444533", 16),
@@ -131,7 +131,7 @@ public class ECCurveHtCHasher {
 			BigInteger.valueOf(1)
 		);
 
-		return new ECCurveHtCHasher(
+		return new ECCurveHasher(
 			"secp256k1",
 			new SHA256Digest(),
 			"secp256k1_XMD:SHA-256_SSWU_RO_",
