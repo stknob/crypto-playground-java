@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-class OprfP521Sha512Test {
+class P521OprfTest {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] output) {}
 

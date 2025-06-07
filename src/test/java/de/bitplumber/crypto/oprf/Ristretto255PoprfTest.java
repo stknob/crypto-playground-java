@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import de.bitplumber.crypto.oprf.ristretto255.PoprfRistretto255Sha512;
 import de.bitplumber.crypto.oprf.ristretto255.AbstractRistretto255Sha512.Proof;
 
-class PoprfRistretto255SHA512Test {
+class Ristretto255PoprfTest {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] info, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
 
