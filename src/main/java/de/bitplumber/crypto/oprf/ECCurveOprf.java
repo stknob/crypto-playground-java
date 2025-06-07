@@ -1,13 +1,15 @@
 package de.bitplumber.crypto.oprf;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
-import org.bouncycastle.math.ec.ECFieldElement;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 
-public class ECCurveOprf implements Oprf<ECFieldElement, ECPoint, ECCurveOprf.BlindResult> {
-	public static record BlindResult(ECFieldElement blind, ECPoint blindedElement) {}
+import de.bitplumber.crypto.oprf.ECCurveSuite.ECScalar;
+
+public class ECCurveOprf implements Oprf<ECScalar, ECPoint, ECCurveOprf.BlindResult> {
+	public static record BlindResult(ECScalar blind, ECPoint blindedElement) {}
 
 	private final ECCurveSuite suite;
 	private final byte[] context;
@@ -48,19 +50,19 @@ public class ECCurveOprf implements Oprf<ECFieldElement, ECPoint, ECCurveOprf.Bl
 		return suite.decodeElement(encoded);
 	}
 
-	public ECFieldElement randomScalar() {
+	public ECScalar randomScalar() {
 		return suite.randomScalar();
 	}
 
-	public byte[] encodeScalar(ECFieldElement scalar) {
+	public byte[] encodeScalar(ECScalar scalar) {
 		return suite.encodeScalar(scalar);
 	}
 
-	public ECFieldElement decodeScalar(byte[] encoded) {
+	public ECScalar decodeScalar(byte[] encoded) {
 		return suite.decodeScalar(encoded);
 	}
 
-	private BlindResult doBlind(byte[] input, ECFieldElement blind) throws Exception {
+	private BlindResult doBlind(byte[] input, ECScalar blind) throws Exception {
 		final var inputElement = suite.hashToGroup(input, null, context);
 		if (inputElement.isInfinity() || !inputElement.isValid())
 			throw new IllegalArgumentException("InvalidInputError");
@@ -70,7 +72,8 @@ public class ECCurveOprf implements Oprf<ECFieldElement, ECPoint, ECCurveOprf.Bl
 	}
 
 	protected BlindResult blind(byte[] input, byte[] blind) throws Exception {
-		return doBlind(input, blind == null ? suite.randomScalar() : suite.decodeScalar(blind));
+		Objects.requireNonNull(blind, "Mandatory parameter 'blind' missing");
+		return doBlind(input, suite.decodeScalar(blind));
 	}
 
 	public BlindResult blind(byte[] input) throws Exception {
@@ -82,7 +85,7 @@ public class ECCurveOprf implements Oprf<ECFieldElement, ECPoint, ECCurveOprf.Bl
 		return blindedElement.multiply(skS.toBigInteger());
 	}
 
-	public byte[] finalize(byte[] input, ECFieldElement blind, ECPoint evaluatedElement) throws Exception {
+	public byte[] finalize(byte[] input, ECScalar blind, ECPoint evaluatedElement) throws Exception {
 		final var invBlind = suite.invertScalar(blind);
 		final var n = evaluatedElement.multiply(invBlind.toBigInteger());
 		final var unblindedElement = suite.encodeElement(n);

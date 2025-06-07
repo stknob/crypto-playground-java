@@ -1,15 +1,16 @@
 package de.bitplumber.crypto.oprf;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
-import org.bouncycastle.math.ec.ECFieldElement;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 
+import de.bitplumber.crypto.oprf.ECCurveSuite.ECScalar;
 import de.bitplumber.crypto.oprf.ECCurveSuite.Proof;
 
-public class ECCurveVoprf implements Voprf<ECFieldElement, ECPoint, ECCurveVoprf.BlindResult, ECCurveVoprf.BlindEvaluateResult, ECCurveSuite.Proof> {
-	public static record BlindResult(ECFieldElement blind, ECPoint blindedElement) {}
+public class ECCurveVoprf implements Voprf<ECScalar, ECPoint, ECCurveVoprf.BlindResult, ECCurveVoprf.BlindEvaluateResult, ECCurveSuite.Proof> {
+	public static record BlindResult(ECScalar blind, ECPoint blindedElement) {}
 	public static final record BlindEvaluateResult(ECPoint evaluatedElement, byte[] proof) {}
 
     private final ECCurveSuite suite;
@@ -51,15 +52,15 @@ public class ECCurveVoprf implements Voprf<ECFieldElement, ECPoint, ECCurveVoprf
 		return suite.decodeElement(encoded);
 	}
 
-	public ECFieldElement randomScalar() {
+	public ECScalar randomScalar() {
 		return suite.randomScalar();
 	}
 
-	public byte[] encodeScalar(ECFieldElement scalar) {
+	public byte[] encodeScalar(ECScalar scalar) {
 		return suite.encodeScalar(scalar);
 	}
 
-	public ECFieldElement decodeScalar(byte[] encoded) {
+	public ECScalar decodeScalar(byte[] encoded) {
 		return suite.decodeScalar(encoded);
 	}
 
@@ -71,7 +72,7 @@ public class ECCurveVoprf implements Voprf<ECFieldElement, ECPoint, ECCurveVoprf
 		return proof.toByteArray();
 	}
 
-	private BlindResult doBlind(byte[] input, ECFieldElement blind) throws Exception {
+	private BlindResult doBlind(byte[] input, ECScalar blind) throws Exception {
 		final var inputElement = suite.hashToGroup(input, null, context);
 		if (inputElement.isInfinity() || !inputElement.isValid())
 			throw new IllegalArgumentException("InvalidInputError");
@@ -81,14 +82,15 @@ public class ECCurveVoprf implements Voprf<ECFieldElement, ECPoint, ECCurveVoprf
 	}
 
 	protected BlindResult blind(byte[] input, byte[] blind) throws Exception {
-		return doBlind(input, blind == null ? suite.randomScalar() : suite.decodeScalar(blind));
+		Objects.requireNonNull(blind, "Mandatory parameter 'blind' missing");
+		return doBlind(input, suite.decodeScalar(blind));
 	}
 
 	public BlindResult blind(byte[] input) throws Exception {
 		return doBlind(input, suite.randomScalar());
 	}
 
-	private BlindEvaluateResult doBlindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, ECPoint blindedElement, ECFieldElement proofRandomScalar) throws Exception {
+	private BlindEvaluateResult doBlindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, ECPoint blindedElement, ECScalar proofRandomScalar) throws Exception {
 		final var skS = suite.decodeScalar(serverSecretKey);
 		final var pkS = suite.decodeElement(serverPublicKey);
 		final var evaluatedElement = blindedElement.multiply(skS.toBigInteger());
@@ -99,14 +101,15 @@ public class ECCurveVoprf implements Voprf<ECFieldElement, ECPoint, ECCurveVoprf
 	}
 
 	protected BlindEvaluateResult blindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, ECPoint blindedElement, byte[] proofRandomScalar) throws Exception {
-		return doBlindEvaluate(serverSecretKey, serverPublicKey, blindedElement, proofRandomScalar == null ? null : suite.decodeScalar(proofRandomScalar));
+		Objects.requireNonNull(proofRandomScalar, "Mandatory parameter 'proofRandomScalar' missing");
+		return doBlindEvaluate(serverSecretKey, serverPublicKey, blindedElement, suite.decodeScalar(proofRandomScalar));
 	}
 
 	public BlindEvaluateResult blindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, ECPoint blindedElement) throws Exception {
 		return doBlindEvaluate(serverSecretKey, serverPublicKey, blindedElement, null);
 	}
 
-	public byte[] finalize(byte[] input, ECFieldElement blind, ECPoint evaluatedElement, ECPoint blindedElement, byte[] serverPublicKey, Proof proof) throws Exception {
+	public byte[] finalize(byte[] input, ECScalar blind, ECPoint evaluatedElement, ECPoint blindedElement, byte[] serverPublicKey, Proof proof) throws Exception {
 		final var pkS = suite.decodeElement(serverPublicKey);
 		final var blindedElements = new ECPoint[]{ blindedElement };
 		final var evaluatedElements = new ECPoint[]{ evaluatedElement };

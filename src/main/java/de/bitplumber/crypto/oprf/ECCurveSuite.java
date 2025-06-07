@@ -11,7 +11,6 @@ import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.math.ec.ECCurve;
-import org.bouncycastle.math.ec.ECFieldElement;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
@@ -23,6 +22,7 @@ class ECCurveSuite {
 
 	private final ECNamedCurveParameterSpec curveSpec;
 	private final ECCurve curve;
+	private final ECScalarField Fp;
 	private final int k;
 
 	private final String name;
@@ -35,6 +35,7 @@ class ECCurveSuite {
 	private ECCurveSuite(final String name, final String curveName, final ExtendedDigest hash, final ECCurveHasher h2c, final int k) {
 		this.curveSpec = ECNamedCurveTable.getParameterSpec(curveName);
 		this.curve = curveSpec.getCurve();
+		this.Fp = ECScalarField.fromCurve(curve);
 		this.name = name;
 		this.hash = hash;
 		this.h2c = h2c;
@@ -68,6 +69,10 @@ class ECCurveSuite {
 		return this.curveSpec.getG();
 	}
 
+	public ECScalarField getFp() {
+		return this.Fp;
+	}
+
 	public static ECCurveSuite createP256() {
 		return new ECCurveSuite(
 			"P256-SHA256",
@@ -95,12 +100,87 @@ class ECCurveSuite {
 			256);
 	}
 
+	public static class ECScalarField {
+		private final BigInteger q;
+		ECScalarField(BigInteger q) {
+			this.q = q;
+		}
+
+		public static ECScalarField fromCurve(ECCurve curve) {
+			return new ECScalarField(curve.getOrder());
+		}
+
+		public BigInteger getOrder() {
+			return this.q;
+		}
+
+		public boolean isValid(BigInteger x) {
+			return x.signum() > 0 && q.compareTo(x) > 0;
+		}
+
+		public boolean isValid(ECScalar x) {
+			return isValid(x.toBigInteger());
+		}
+
+		public boolean isZero(ECScalar x) {
+			return x.toBigInteger().signum() == 0;
+		}
+
+		public ECScalar inverse(ECScalar x) {
+			return new ECScalar(x.toBigInteger().modInverse(this.q));
+		}
+
+		public ECScalar add(ECScalar x, ECScalar y) {
+			return new ECScalar(x.toBigInteger().add(y.toBigInteger()).mod(this.q));
+		}
+
+		public ECScalar subtract(ECScalar x, ECScalar y) {
+			return new ECScalar(x.toBigInteger().subtract(y.toBigInteger()).mod(this.q));
+		}
+
+		public ECScalar multiply(ECScalar x, ECScalar y) {
+			return new ECScalar(x.toBigInteger().multiply(y.toBigInteger()).mod(this.q));
+		}
+
+		public ECScalar divide(ECScalar x, ECScalar y) {
+			return this.multiply(x, this.inverse(y));
+		}
+
+		public ECScalar scalarFromBytesModOrderWide(byte[] uniformBytes) {
+			final var s = BigIntegers.fromUnsignedByteArray(uniformBytes).mod(this.q);
+			if (!this.isValid(s)) throw new IllegalArgumentException("Invalid field element");
+			return new ECScalar(s);
+		}
+	}
+
+	public static class ECScalar {
+		public static final ECScalar ONE  = new ECScalar(BigInteger.ONE);
+		public static final ECScalar ZERO = new ECScalar(BigInteger.ZERO);
+		private final BigInteger value;
+
+		ECScalar(BigInteger value) {
+			this.value = value;
+		}
+
+		public BigInteger toBigInteger() {
+			return this.value;
+		}
+
+		public boolean isZero() {
+			return this.value.signum() == 0;
+		}
+
+		public boolean equals(ECScalar other) {
+			return this.value.equals(other.toBigInteger());
+		}
+	}
+
 	protected byte[] I2OSP(long input, int size) {
 		return BigIntegers.asUnsignedByteArray(size, BigInteger.valueOf(input));
 	}
 
-	public byte[] encodeScalar(ECFieldElement scalar) {
-		final var encoded = scalar.getEncoded();
+	public byte[] encodeScalar(ECScalar scalar) {
+		final var encoded = BigIntegers.asUnsignedByteArray(scalarSize, scalar.toBigInteger());
 		if (encoded == null || encoded.length != scalarSize) {
 			throw new IllegalArgumentException(String.format("Invalid scalar encoding size: '%d' vs '%d' expected",
 				Objects.requireNonNullElse(encoded, EMPTY_ARRAY).length, scalarSize));
@@ -108,17 +188,13 @@ class ECCurveSuite {
 		return encoded;
 	}
 
-	public ECFieldElement decodeScalar(byte[] encoded) {
+	public ECScalar decodeScalar(byte[] encoded) {
 		final var s = BigIntegers.fromUnsignedByteArray(encoded);
-		if (!curve.isValidFieldElement(s)) {
+		if (!Fp.isValid(s)) {
 			throw new IllegalArgumentException(String.format("Encoded %s scalar is invalid",
 				curveSpec.getName()));
 		}
-		return curve.fromBigInteger(s);
-	}
-
-	public ECFieldElement invertScalar(ECFieldElement scalar) {
-        return curve.fromBigInteger(scalar.toBigInteger().modInverse(curve.getOrder()));
+		return new ECScalar(s);
 	}
 
 	public byte[] encodeElement(ECPoint element) {
@@ -139,18 +215,21 @@ class ECCurveSuite {
 		return p;
 	}
 
-	private ECFieldElement scalarFromBytesModOrderWide(byte[] uniformBytes) {
-        final var s = BigIntegers.fromUnsignedByteArray(uniformBytes).mod(curve.getOrder());
-        if (!curve.isValidFieldElement(s)) {
-			throw new IllegalArgumentException("Invalid field element");
-		}
-		return curve.fromBigInteger(s);
+	private ECScalar scalarFromBytesModOrderWide(byte[] uniformBytes) {
+		Objects.requireNonNull(uniformBytes, "Mandatory parameter 'uniformBytes' is not set");
+		final var ell = Math.ceilDiv(curve.getFieldSize() + k, 8);
+		if (uniformBytes.length < ell) throw new IllegalArgumentException(String.format("%d", ell));
+		return Fp.scalarFromBytesModOrderWide(uniformBytes);
 	}
 
-	public ECFieldElement randomScalar() {
+	public ECScalar randomScalar() {
 		final var ell = Math.ceilDiv(curve.getFieldSize() + k, 8);
 		final var uniformBytes = RandomUtils.secureStrong().randomBytes(ell);
 		return scalarFromBytesModOrderWide(uniformBytes);
+	}
+
+	public ECScalar invertScalar(ECScalar x) {
+		return Fp.inverse(x);
 	}
 
 	protected ECPoint hashToGroup(byte[] msg, byte[] customDST, byte[] context) {
@@ -158,7 +237,7 @@ class ECCurveSuite {
 		return h2c.hashToCurve(msg, dst);
 	}
 
-	protected ECFieldElement hashToScalar(byte[] msg, byte[] customDST, byte[] context) {
+	protected ECScalar hashToScalar(byte[] msg, byte[] customDST, byte[] context) {
 		final var ell = Math.ceilDiv(curve.getFieldSize() + k, 8);
 		final var dst = Objects.requireNonNullElseGet(customDST, () -> Arrays.concatenate(Labels.HASH_TO_SCALAR, context));
 		final var s = h2c.expandMessage(msg, dst, ell);
@@ -177,8 +256,8 @@ class ECCurveSuite {
 		final var deriveDST = Arrays.concatenate(Labels.DERIVE_KEYPAIR, context);
 
 		int counter = 0;
-		ECFieldElement secretScalar = curve.fromBigInteger(BigInteger.ZERO);
-		while (secretScalar.isZero()) {
+		ECScalar secretScalar = new ECScalar(BigInteger.ZERO);
+		while (Fp.isZero(secretScalar)) {
 			if (counter > 255) throw new Exception("Failed to derive secret key");
 			secretScalar = hashToScalar(Arrays.concatenate(deriveInput, I2OSP(counter, 1)), deriveDST, context);
 			counter++;
@@ -211,7 +290,7 @@ class ECCurveSuite {
 
 	protected static final record CompositesResult(ECPoint M, ECPoint Z) {}
 
-	protected CompositesResult computeCompositesFast(ECFieldElement k, ECPoint B, ECPoint[] C, ECPoint[] D, byte[] context) {
+	protected CompositesResult computeCompositesFast(ECScalar k, ECPoint B, ECPoint[] C, ECPoint[] D, byte[] context) {
 		final var bm = encodeElement(B);
 		final var seedDST = Arrays.concatenate(Labels.SEED_DST_PREFIX, context);
 		final var seed = hash(Arrays.concatenate(
@@ -265,21 +344,7 @@ class ECCurveSuite {
 		return new CompositesResult(M, Z);
 	}
 
-	/**
-	 * Perform generateProof scalar operations mod G
-	 * @param k
-	 * @param c
-	 * @param r
-	 * @return
-	 */
-	protected ECFieldElement generateS(ECFieldElement k, ECFieldElement c, ECFieldElement r) {
-		final var kb = k.toBigInteger();
-		final var cb = c.toBigInteger();
-		final var rb = r.toBigInteger();
-		return curve.fromBigInteger(rb.subtract(cb.multiply(kb)).mod(curve.getOrder()));
-	}
-
-	protected Proof generateProof(ECFieldElement k, ECPoint A, ECPoint B, ECPoint[] C, ECPoint[] D, ECFieldElement proofRandomScalar, byte[] context) {
+	protected Proof generateProof(ECScalar k, ECPoint A, ECPoint B, ECPoint[] C, ECPoint[] D, ECScalar proofRandomScalar, byte[] context) {
 		final var MZ = computeCompositesFast(k, B, C, D, context);
 		final var M = MZ.M();
 		final var Z = MZ.Z();
@@ -304,11 +369,11 @@ class ECCurveSuite {
 		});
 
 		final var c = hashToScalar(challengeTranscript, null, context);
-		final var s = generateS(k, c, r);
+		final var s = Fp.subtract(r, Fp.multiply(c, k));
 		return new Proof(encodeScalar(c), encodeScalar(s));
 	}
 
-	protected Proof generateProof(ECFieldElement k, ECPoint A, ECPoint B, ECPoint[] C, ECPoint[] D, byte[] context) {
+	protected Proof generateProof(ECScalar k, ECPoint A, ECPoint B, ECPoint[] C, ECPoint[] D, byte[] context) {
 		return generateProof(k, A, B, C, D, null, context);
 	}
 
@@ -337,7 +402,6 @@ class ECCurveSuite {
 			Labels.CHALLENGE
 		});
 
-		final var expectedC = hashToScalar(challengeTranscript, null, context);
-		return expectedC.equals(c);
+		return hashToScalar(challengeTranscript, null, context).equals(c);
 	}
 }
