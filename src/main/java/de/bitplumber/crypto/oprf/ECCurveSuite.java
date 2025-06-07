@@ -64,6 +64,10 @@ class ECCurveSuite {
 		return this.elementSize;
 	}
 
+	public ECPoint getG() {
+		return this.curveSpec.getG();
+	}
+
 	public static ECCurveSuite createP256() {
 		return new ECCurveSuite(
 			"P256-SHA256",
@@ -261,6 +265,20 @@ class ECCurveSuite {
 		return new CompositesResult(M, Z);
 	}
 
+	/**
+	 * Perform generateProof scalar operations mod G
+	 * @param k
+	 * @param c
+	 * @param r
+	 * @return
+	 */
+	protected ECFieldElement generateS(ECFieldElement k, ECFieldElement c, ECFieldElement r) {
+		final var kb = k.toBigInteger();
+		final var cb = c.toBigInteger();
+		final var rb = r.toBigInteger();
+		return curve.fromBigInteger(rb.subtract(cb.multiply(kb)).mod(curve.getOrder()));
+	}
+
 	protected Proof generateProof(ECFieldElement k, ECPoint A, ECPoint B, ECPoint[] C, ECPoint[] D, ECFieldElement proofRandomScalar, byte[] context) {
 		final var MZ = computeCompositesFast(k, B, C, D, context);
 		final var M = MZ.M();
@@ -286,7 +304,7 @@ class ECCurveSuite {
 		});
 
 		final var c = hashToScalar(challengeTranscript, null, context);
-		final var s = r.subtract(c.multiply(k));
+		final var s = generateS(k, c, r);
 		return new Proof(encodeScalar(c), encodeScalar(s));
 	}
 
