@@ -100,6 +100,16 @@ class ECCurveSuite {
 			256);
 	}
 
+	public static ECCurveSuite createSecp256k1() {
+		return new ECCurveSuite(
+			"secp256k1-SHA256",
+			"secp256k1",
+			new SHA256Digest(),
+			ECCurveHasher.createSecp256k1(),
+			128);
+	}
+
+
 	public static class ECScalarField {
 		private final BigInteger q;
 		ECScalarField(BigInteger q) {

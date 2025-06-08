@@ -34,6 +34,10 @@ public class ECCurveOprf implements Oprf<ECScalar, ECPoint, ECCurveOprf.BlindRes
 		return new ECCurveOprf(ECCurveSuite.createP521());
 	}
 
+	public static ECCurveOprf createSecp256k1() {
+		return new ECCurveOprf(ECCurveSuite.createSecp256k1());
+	}
+
 	public KeyPair randomKeyPair() {
 		return suite.randomKeyPair();
 	}
