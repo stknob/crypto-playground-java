@@ -1,18 +1,12 @@
 package de.bitplumber.crypto.oprf;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-class P256VoprfTest {
-	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] input,
-		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
-
-	private static final RFC9497TestVector[] RFC9497TestVectors = new RFC9497TestVector[]{
+class P256VoprfTest extends GenericOprfTestBase{
+	private static final RFC9497VoprfTestVector[] RFC9497TestVectors = new RFC9497VoprfTestVector[]{
 		//
-		new RFC9497TestVector(
+		new RFC9497VoprfTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("ca5d94c8807817669a51b196c34c1b7f8442fde4334a7121ae4736364312fca6"),
@@ -26,7 +20,7 @@ class P256VoprfTest {
 			Hex.decode("0412e8f78b02c415ab3a288e228978376f99927767ff37c5718d420010a645a1")
 		),
 		//
-		new RFC9497TestVector(
+		new RFC9497VoprfTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("ca5d94c8807817669a51b196c34c1b7f8442fde4334a7121ae4736364312fca6"),
@@ -44,24 +38,6 @@ class P256VoprfTest {
 	@Test
 	void testRFC9497TestVectors() {
 		final var voprf = ECCurveVoprf.createP256();
-		for (final var vector : RFC9497TestVectors) {
-			final var keypair = assertDoesNotThrow(() -> voprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
-			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
-			assertArrayEquals(vector.publicKey(), keypair.publicKey(), "public key");
-
-			final var blindResult = assertDoesNotThrow(() -> voprf.blind(vector.input(), vector.blind()));
-			assertArrayEquals(vector.blindedElement(), voprf.encodeElement(blindResult.blindedElement()), "blindedElement");
-
-			final var blindEvaluateResult = assertDoesNotThrow(() -> voprf.blindEvaluate(keypair.secretKey(), keypair.publicKey(), blindResult.blindedElement(), vector.proofRandomScalar()));
-			assertArrayEquals(vector.evaluationElement(), voprf.encodeElement(blindEvaluateResult.evaluatedElement()), "evaluatedElement");
-			assertArrayEquals(vector.proof(), blindEvaluateResult.proof(), "proof");
-
-			final var finalizeResult = assertDoesNotThrow(() -> voprf.finalize(vector.input(), blindResult.blind(), blindEvaluateResult.evaluatedElement(),
-				blindResult.blindedElement(), vector.publicKey(), voprf.decodeProof(vector.proof())));
-			assertArrayEquals(vector.output(), finalizeResult, "finalize output");
-
-			final var evaluateResult = assertDoesNotThrow(() -> voprf.evaluate(keypair.secretKey(), vector.input()));
-			assertArrayEquals(vector.output(), evaluateResult, "evaluate output");
-		}
+		runVoprfTestVectors(voprf, RFC9497TestVectors);
 	}
 }

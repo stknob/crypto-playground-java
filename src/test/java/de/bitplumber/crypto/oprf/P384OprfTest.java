@@ -1,18 +1,12 @@
 package de.bitplumber.crypto.oprf;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-class P384OprfTest {
-	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
-		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] output) {}
-
-	private static final RFC9497TestVector[] RFC9497TestVectors = new RFC9497TestVector[]{
+class P384OprfTest extends GenericOprfTestBase {
+	private static final RFC9497OprfTestVector[] RFC9497TestVectors = new RFC9497OprfTestVector[]{
 		// RFC 9497 - P384-SHA384 - OPRF - Test Vector 1, Batch Size 1
-		new RFC9497TestVector(
+		new RFC9497OprfTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("dfe7ddc41a4646901184f2b432616c8ba6d452f9bcd0c4f75a5150ef2b2ed02ef40b8b92f60ae591bcabd72a6518f188"),
@@ -23,7 +17,7 @@ class P384OprfTest {
 			Hex.decode("ed84ad3f31a552f0456e58935fcc0a3039db42e7f356dcb32aa6d487b6b815a07d5813641fb1398c03ddab5763874357")
 		),
 		// RFC 9497 - P384-SHA384 - OPRF - Test Vector 2, Batch Size 1
-		new RFC9497TestVector(
+		new RFC9497OprfTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("dfe7ddc41a4646901184f2b432616c8ba6d452f9bcd0c4f75a5150ef2b2ed02ef40b8b92f60ae591bcabd72a6518f188"),
@@ -38,23 +32,6 @@ class P384OprfTest {
 	@Test
 	void testRFC9497TestVectors() {
 		final var oprf = ECCurveOprf.createP384();
-
-		for (final var vector : RFC9497TestVectors) {
-			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
-			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secretKey");
-
-			final var blindResult = assertDoesNotThrow(() -> oprf.blind(vector.input(), vector.blind()));
-			assertArrayEquals(vector.blindedElement(), oprf.encodeElement(blindResult.blindedElement()), "blindedElement");
-			assertArrayEquals(vector.blind(), oprf.encodeScalar(blindResult.blind()), "blind");
-
-			final var blindEvaluateResult = assertDoesNotThrow(() -> oprf.blindEvaluate(keypair.secretKey(), blindResult.blindedElement()));
-			assertArrayEquals(vector.evaluationElement(), oprf.encodeElement(blindEvaluateResult), "evaluationElement");
-
-			final var finalizeResult = assertDoesNotThrow(() -> oprf.finalize(vector.input(), blindResult.blind(), blindEvaluateResult));
-			assertArrayEquals(vector.output(), finalizeResult, "finalize output");
-
-			final var evaluateResult = assertDoesNotThrow(() -> oprf.evaluate(keypair.secretKey(), vector.input()));
-			assertArrayEquals(vector.output(), evaluateResult, "evaluate output");
-		}
+		runOprfTestVectors(oprf, RFC9497TestVectors);
 	}
 }

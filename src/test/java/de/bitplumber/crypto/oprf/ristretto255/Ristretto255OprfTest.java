@@ -1,12 +1,10 @@
-package de.bitplumber.crypto.oprf;
+package de.bitplumber.crypto.oprf.ristretto255;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
-
-import de.bitplumber.crypto.oprf.ristretto255.Ristretto255Oprf;
 
 class Ristretto255OprfTest {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,

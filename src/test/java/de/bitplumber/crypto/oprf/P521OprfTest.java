@@ -1,18 +1,12 @@
 package de.bitplumber.crypto.oprf;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-class P521OprfTest {
-	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
-		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] output) {}
-
-	private static final RFC9497TestVector[] RFC9497TestVectors = new RFC9497TestVector[]{
+class P521OprfTest extends GenericOprfTestBase{
+	private static final RFC9497OprfTestVector[] RFC9497TestVectors = new RFC9497OprfTestVector[]{
 		// RFC 9497 - P512-SHA512 - OPRF - Test Vector 1, Batch Size 1
-		new RFC9497TestVector(
+		new RFC9497OprfTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("0153441b8faedb0340439036d6aed06d1217b34c42f17f8db4c5cc610a4a955d698a688831b16d0dc7713a1aa3611ec60703bffc7dc9c84e3ed673b3dbe1d5fccea6"),
@@ -23,7 +17,7 @@ class P521OprfTest {
 			Hex.decode("26232de6fff83f812adadadb6cc05d7bbeee5dca043dbb16b03488abb9981d0a1ef4351fad52dbd7e759649af393348f7b9717566c19a6b8856284d69375c809")
 		),
 		// RFC 9497 - P512-SHA512 - OPRF - Test Vector 2, Batch Size 1
-		new RFC9497TestVector(
+		new RFC9497OprfTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("0153441b8faedb0340439036d6aed06d1217b34c42f17f8db4c5cc610a4a955d698a688831b16d0dc7713a1aa3611ec60703bffc7dc9c84e3ed673b3dbe1d5fccea6"),
@@ -38,23 +32,6 @@ class P521OprfTest {
 	@Test
 	void testRFC9497TestVectors() {
 		final var oprf = ECCurveOprf.createP521();
-
-		for (final var vector : RFC9497TestVectors) {
-			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
-			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secretKey");
-
-			final var blindResult = assertDoesNotThrow(() -> oprf.blind(vector.input(), vector.blind()));
-			assertArrayEquals(vector.blindedElement(), oprf.encodeElement(blindResult.blindedElement()), "blindedElement");
-			assertArrayEquals(vector.blind(), oprf.encodeScalar(blindResult.blind()), "blind");
-
-			final var blindEvaluateResult = assertDoesNotThrow(() -> oprf.blindEvaluate(keypair.secretKey(), blindResult.blindedElement()));
-			assertArrayEquals(vector.evaluationElement(), oprf.encodeElement(blindEvaluateResult), "evaluationElement");
-
-			final var finalizeResult = assertDoesNotThrow(() -> oprf.finalize(vector.input(), blindResult.blind(), blindEvaluateResult));
-			assertArrayEquals(vector.output(), finalizeResult, "finalize output");
-
-			final var evaluateResult = assertDoesNotThrow(() -> oprf.evaluate(keypair.secretKey(), vector.input()));
-			assertArrayEquals(vector.output(), evaluateResult, "evaluate output");
-		}
+		runOprfTestVectors(oprf, RFC9497TestVectors);
 	}
 }

@@ -1,18 +1,12 @@
 package de.bitplumber.crypto.oprf;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-class P256PoprfTest {
-	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] info, byte[] input,
-		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
-
-	private static final RFC9497TestVector[] RFC9497TestVectors = new RFC9497TestVector[]{
+class P256PoprfTest extends GenericOprfTestBase {
+	private static final RFC9497PoprfTestVector[] RFC9497TestVectors = new RFC9497PoprfTestVector[]{
 		// ristretto255-SHA512 - POPRF - Test Vector 1, Batch Size 1
-		new RFC9497TestVector(
+		new RFC9497PoprfTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("6ad2173efa689ef2c27772566ad7ff6e2d59b3b196f00219451fb2c89ee4dae2"),
@@ -27,7 +21,7 @@ class P256PoprfTest {
 			Hex.decode("193a92520bd8fd1f37accb918040a57108daa110dc4f659abe212636d245c592")
 		),
 		// ristretto255-SHA512 - POPRF - Test Vector 2, Batch Size 1
-		new RFC9497TestVector(
+		new RFC9497PoprfTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("6ad2173efa689ef2c27772566ad7ff6e2d59b3b196f00219451fb2c89ee4dae2"),
@@ -46,24 +40,6 @@ class P256PoprfTest {
 	@Test
 	void testRFC9497TestVectors() {
 		final var poprf = ECCurvePoprf.createP256();
-		for (final var vector : RFC9497TestVectors) {
-			final var keypair = assertDoesNotThrow(() -> poprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
-			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
-			assertArrayEquals(vector.publicKey(), keypair.publicKey(), "public key");
-
-			final var blindResult = assertDoesNotThrow(() -> poprf.blind(vector.input(), vector.info(), vector.publicKey(), vector.blind()));
-			assertArrayEquals(vector.blindedElement(), poprf.encodeElement(blindResult.blindedElement()), "blindedElement");
-
-			final var blindEvaluateResult = assertDoesNotThrow(() -> poprf.blindEvaluate(keypair.secretKey(), blindResult.blindedElement(), vector.info(), vector.proofRandomScalar()));
-			assertArrayEquals(vector.evaluationElement(), poprf.encodeElement(blindEvaluateResult.evaluatedElement()), "evaluatedElement");
-			assertArrayEquals(vector.proof(), blindEvaluateResult.proof(), "proof");
-
-			final var finalizeResult = assertDoesNotThrow(() -> poprf.finalize(vector.input(), blindResult.blind(), blindEvaluateResult.evaluatedElement(), blindResult.blindedElement(),
-				poprf.decodeProof(blindEvaluateResult.proof()), vector.info(), blindResult.tweakedKey()));
-			assertArrayEquals(vector.output(), finalizeResult, "finalize output");
-
-			final var evaluateResult = assertDoesNotThrow(() -> poprf.evaluate(keypair.secretKey(), vector.input(), vector.info()));
-			assertArrayEquals(vector.output(), evaluateResult, "evaluate output");
-		}
+		runPoprfTestVectors(poprf, RFC9497TestVectors);
 	}
 }
