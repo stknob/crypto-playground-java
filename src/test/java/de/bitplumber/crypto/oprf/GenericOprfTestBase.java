@@ -8,12 +8,13 @@ import java.util.Objects;
 
 import org.bouncycastle.crypto.Xof;
 import org.bouncycastle.crypto.digests.CSHAKEDigest;
+import org.bouncycastle.util.encoders.Hex;
 
 abstract class GenericOprfTestBase {
 	protected static final record RFC9497OprfTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] output) {}
 
-	protected void runOprfTestVectors(ECCurveOprf oprf, RFC9497OprfTestVector[] vectors) {
+	protected void runTestVectors(ECCurveOprf oprf, RFC9497OprfTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secretKey");
@@ -36,7 +37,7 @@ abstract class GenericOprfTestBase {
 	protected static final record RFC9497PoprfTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] info, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
 
-	protected void runPoprfTestVectors(ECCurvePoprf poprf, RFC9497PoprfTestVector[] vectors) {
+	protected void runTestVectors(ECCurvePoprf poprf, RFC9497PoprfTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> poprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
@@ -61,7 +62,7 @@ abstract class GenericOprfTestBase {
 	protected static final record RFC9497VoprfTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
 
-	protected void runVoprfTestVectors(ECCurveVoprf voprf, RFC9497VoprfTestVector[] vectors) {
+	protected void runTestVectors(ECCurveVoprf voprf, RFC9497VoprfTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> voprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
@@ -93,5 +94,85 @@ abstract class GenericOprfTestBase {
 		final var h = new CSHAKEDigest(256, null, Objects.requireNonNullElse(dst, "".getBytes(StandardCharsets.UTF_8)));
 		h.update(seed, 0, seed.length);
 		return h;
+	}
+
+	protected static final int DEFAULT_RANDOM_ROUNDS = 100;
+
+	protected void runRandomizedRountrip(ECCurveOprf oprf, Integer rounds) {
+		final var numRounds = Objects.requireNonNullElse(rounds, DEFAULT_RANDOM_ROUNDS).intValue();
+		final var seed = Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3");
+		final var keyInfo = Hex.decode("74657374206b6579");
+		final var keySeed = new byte[32];
+		final var input   = new byte[32];
+
+		final var hash = hashXOF(seed, null);
+		for (int i = 0; i < numRounds; i++) {
+			hash.doOutput(keySeed, 0, keySeed.length);
+			hash.doOutput(input,   0, input.length);
+
+			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(keySeed, keyInfo));
+			final var blindResult = assertDoesNotThrow(() -> oprf.blind(input));
+			final var blindEvaluateResult = assertDoesNotThrow(() -> oprf.blindEvaluate(keypair.secretKey(), blindResult.blindedElement()));
+			final var finalizeResult = assertDoesNotThrow(() -> oprf.finalize(input, blindResult.blind(), blindEvaluateResult));
+			final var evaluateResult = assertDoesNotThrow(() -> oprf.evaluate(keypair.secretKey(), input));
+			assertArrayEquals(finalizeResult, evaluateResult, "evaluate and finalize outputs do not match");
+		}
+	}
+
+	protected void runRandomizedRountrip(ECCurveOprf oprf) {
+		runRandomizedRountrip(oprf, null);
+	}
+
+
+	protected void runRandomizedRountrip(ECCurvePoprf poprf, Integer rounds) {
+		final var numRounds = Objects.requireNonNullElse(rounds, DEFAULT_RANDOM_ROUNDS).intValue();
+		final var seed = Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3");
+		final var info = Hex.decode("7465737420696e666f");
+		final var keyInfo = Hex.decode("74657374206b6579");
+		final var keySeed = new byte[32];
+		final var input   = new byte[32];
+
+		final var hash = hashXOF(seed, null);
+		for (int i = 0; i < numRounds; i++) {
+			hash.doOutput(keySeed, 0, keySeed.length);
+			hash.doOutput(input,   0, input.length);
+
+			final var keypair = assertDoesNotThrow(() -> poprf.deriveKeyPair(keySeed, keyInfo));
+			final var blindResult = assertDoesNotThrow(() -> poprf.blind(input, info, keypair.publicKey()));
+			final var blindEvaluateResult = assertDoesNotThrow(() -> poprf.blindEvaluate(keypair.secretKey(), blindResult.blindedElement(), info));
+			final var finalizeResult = assertDoesNotThrow(() -> poprf.finalize(input, blindResult.blind(), blindEvaluateResult.evaluatedElement(), blindResult.blindedElement(), poprf.decodeProof(blindEvaluateResult.proof()), info, blindResult.tweakedKey()));
+			final var evaluateResult = assertDoesNotThrow(() -> poprf.evaluate(keypair.secretKey(), input, info));
+			assertArrayEquals(finalizeResult, evaluateResult, "evaluate and finalize outputs do not match");
+		}
+	}
+
+	protected void runRandomizedRountrip(ECCurvePoprf poprf) {
+		runRandomizedRountrip(poprf, null);
+	}
+
+
+	protected void runRandomizedRountrip(ECCurveVoprf voprf, Integer rounds) {
+		final var numRounds = Objects.requireNonNullElse(rounds, DEFAULT_RANDOM_ROUNDS).intValue();
+		final var seed = Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3");
+		final var keyInfo = Hex.decode("74657374206b6579");
+		final var keySeed = new byte[32];
+		final var input   = new byte[32];
+
+		final var hash = hashXOF(seed, null);
+		for (int i = 0; i < numRounds; i++) {
+			hash.doOutput(keySeed, 0, keySeed.length);
+			hash.doOutput(input,   0, input.length);
+
+			final var keypair = assertDoesNotThrow(() -> voprf.deriveKeyPair(keySeed, keyInfo));
+			final var blindResult = assertDoesNotThrow(() -> voprf.blind(input));
+			final var blindEvaluateResult = assertDoesNotThrow(() -> voprf.blindEvaluate(keypair.secretKey(), keypair.publicKey(), blindResult.blindedElement()));
+			final var finalizeResult = assertDoesNotThrow(() -> voprf.finalize(input, blindResult.blind(), blindEvaluateResult.evaluatedElement(), blindResult.blindedElement(), keypair.publicKey(), voprf.decodeProof(blindEvaluateResult.proof())));
+			final var evaluateResult = assertDoesNotThrow(() -> voprf.evaluate(keypair.secretKey(), input));
+			assertArrayEquals(finalizeResult, evaluateResult, "evaluate and finalize outputs do not match");
+		}
+	}
+
+	protected void runRandomizedRountrip(ECCurveVoprf voprf) {
+		runRandomizedRountrip(voprf, null);
 	}
 }

@@ -1,42 +1,46 @@
 package de.bitplumber.crypto.oprf;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class Secp256k1OprfTest extends GenericOprfTestBase {
-	private static final RFC9497OprfTestVector[] RFC9497TestVectors = new RFC9497OprfTestVector[]{
-		// No RFC testvectors available for this suite
-	};
+	private static final RFC9497OprfTestVector[] OPRF_TEST_VECTORS = new RFC9497OprfTestVector[]{ /* No testvectors available */};
+	private static final RFC9497PoprfTestVector[] POPRF_TEST_VECTORS = new RFC9497PoprfTestVector[]{ /* No testvectors available */};
+	private static final RFC9497VoprfTestVector[] VOPRF_TEST_VECTORS = new RFC9497VoprfTestVector[]{ /* No testvectors available */};
 
 	@Test @Disabled("No test vectors available")
-	void testRFC9497TestVectors() {
+	void testRFC9497OprfTestVectors() {
 		final var oprf = ECCurveOprf.createP256();
-		runOprfTestVectors(oprf, RFC9497TestVectors);
+		runTestVectors(oprf, OPRF_TEST_VECTORS);
+	}
+
+	@Test @Disabled("No test vectors available")
+	void testRFC9497PoprfTestVectors() {
+		final var poprf = ECCurvePoprf.createP256();
+		runTestVectors(poprf, POPRF_TEST_VECTORS);
+	}
+
+	@Test @Disabled("No test vectors available")
+	void testRFC9497VoprfTestVectors() {
+		final var voprf = ECCurveVoprf.createP256();
+		runTestVectors(voprf, VOPRF_TEST_VECTORS);
 	}
 
 	@Test
-	void testRoundtrips() {
-		final var seed = Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3");
-		final var keyInfo = Hex.decode("74657374206b6579");
-		final var keySeed = new byte[32];
-		final var input   = new byte[32];
-
-		final var hash = hashXOF(seed, null);
+	void testOprfRoundtrips() {
 		final var oprf = ECCurveOprf.createSecp256k1();
-		for (int i = 0; i < 1000; i++) {
-			hash.doOutput(keySeed, 0, keySeed.length);
-			hash.doOutput(input,   0, input.length);
+		runRandomizedRountrip(oprf);
+	}
 
-			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(keySeed, keyInfo));
-			final var blindResult = assertDoesNotThrow(() -> oprf.blind(input));
-			final var blindEvaluateResult = assertDoesNotThrow(() -> oprf.blindEvaluate(keypair.secretKey(), blindResult.blindedElement()));
-			final var finalizeResult = assertDoesNotThrow(() -> oprf.finalize(input, blindResult.blind(), blindEvaluateResult));
-			final var evaluateResult = assertDoesNotThrow(() -> oprf.evaluate(keypair.secretKey(), input));
-			assertArrayEquals(finalizeResult, evaluateResult, "evaluate and finalize outputs do not match");
-		}
+	@Test
+	void testPoprfRoundtrips() {
+		final var poprf = ECCurvePoprf.createSecp256k1();
+		runRandomizedRountrip(poprf);
+	}
+
+	@Test
+	void testVoprfRoundtrips() {
+		final var voprf = ECCurveVoprf.createSecp256k1();
+		runRandomizedRountrip(voprf);
 	}
 }

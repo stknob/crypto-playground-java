@@ -36,6 +36,10 @@ public class ECCurvePoprf implements Poprf<ECScalar, ECPoint, ECCurvePoprf.Blind
 		return new ECCurvePoprf(ECCurveSuite.createP521());
 	}
 
+	public static ECCurvePoprf createSecp256k1() {
+		return new ECCurvePoprf(ECCurveSuite.createSecp256k1());
+	}
+
 	public KeyPair randomKeyPair() {
 		return suite.randomKeyPair();
 	}

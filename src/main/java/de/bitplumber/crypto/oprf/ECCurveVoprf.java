@@ -36,6 +36,10 @@ public class ECCurveVoprf implements Voprf<ECScalar, ECPoint, ECCurveVoprf.Blind
 		return new ECCurveVoprf(ECCurveSuite.createP521());
 	}
 
+	public static ECCurveVoprf createSecp256k1() {
+		return new ECCurveVoprf(ECCurveSuite.createSecp256k1());
+	}
+
 	public KeyPair randomKeyPair() {
 		return suite.randomKeyPair();
 	}
