@@ -24,16 +24,15 @@ public class ECCurveHasher {
 	private final ECFieldElement A;  //NOSONAR
 	private final ECFieldElement B;  //NOSONAR
 	private final ECFieldElement Z;  //NOSONAR
-	private final BigInteger q;
-	private final BigInteger G; //NOSONAR
-	// private final BigInteger H; //NOSONAR
+	private final BigInteger Q;		// Field order	//NOSONAR
+	private final BigInteger N;		// Curve order	//NOSONAR
 
 	protected final byte[] hashToCurveDST;
 	protected final byte[] encodeToCurveDST;
 	protected final ExtendedDigest hash;	// Either a Xof or ExtendedDigest
 	protected final boolean useXof;			// Use expandMessageXof
 	protected final int m;
-	protected final int k;
+	protected final int k;					// Security level in bits
 
 	/**
 	 * Constructor for curves that need an isogeny mapping
@@ -56,9 +55,9 @@ public class ECCurveHasher {
 
 		// Either use isogeny curve parameters for operations or main curve
 		final var htcCurve = Objects.requireNonNullElse(isogenyCurve, curve);
-		this.q = htcCurve.getField().getCharacteristic();	// Field modulus
-		this.Z = htcCurve.fromBigInteger(BigInteger.valueOf(Z).mod(q));
-		this.G = htcCurve.getOrder();						// Curve order
+		this.Q = htcCurve.getField().getCharacteristic();	// Field modulus
+		this.Z = htcCurve.fromBigInteger(BigInteger.valueOf(Z).mod(Q));
+		this.N = htcCurve.getOrder();						// Curve order
 		this.A = htcCurve.getA();
 		this.B = htcCurve.getB();
 
@@ -142,20 +141,18 @@ public class ECCurveHasher {
 	 * @return
 	 */
 	public static ECCurveHasher createSecp256k1() {
-		final var isogenyCurve = new ECCurve.Fp(
-			new BigInteger("00fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16),
-			new BigInteger("003f8731abdd661adca08a5558f0f5d272e953d363cb6f0e5d405447c01a444533", 16),
-			BigInteger.valueOf(1771),
-			new BigInteger("00fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16),
-			BigInteger.valueOf(1)
-		);
-
 		return new ECCurveHasher(
 			"secp256k1",
 			new SHA256Digest(),
 			"secp256k1_XMD:SHA-256_SSWU_RO_",
 			"secp256k1_XMD:SHA-256_SSWU_NU_",
-			isogenyCurve,
+			new ECCurve.Fp(
+				new BigInteger("00fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16),
+				new BigInteger("003f8731abdd661adca08a5558f0f5d272e953d363cb6f0e5d405447c01a444533", 16),
+				BigInteger.valueOf(1771),
+				new BigInteger("00fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16),
+				BigInteger.valueOf(1)
+			),
 			-11,
 			1,
 			128
@@ -167,21 +164,21 @@ public class ECCurveHasher {
 	 * @return
 	 */
 	public String getCurveName() {
-		return curveSpec.getName();
+		return this.curveSpec.getName();
 	}
 
 	/**
 	 * @return
 	 */
 	public ECNamedCurveParameterSpec getCurveSpec() {
-		return curveSpec;
+		return this.curveSpec;
 	}
 
 	/**
 	 * @return
 	 */
 	public ECCurve getCurve() {
-		return curve;
+		return this.curve;
 	}
 
 	/**
@@ -199,9 +196,17 @@ public class ECCurveHasher {
 		return this.k;
 	}
 
+	/**
+	 *
+	 * @return
+	 */
+	public int getMinHashLength() {
+		return Math.ceilDiv(this.curve.getFieldSize() + this.k, 8);
+	}
+
 	protected static final record SqrtRatioResult(boolean is_gx1_square, ECFieldElement y1) {}
 	protected SqrtRatioResult sqrtRatio(ECCurve curve, ECFieldElement u, ECFieldElement v) {
-		if (G.mod(BigInteger.valueOf(4)).equals(BigInteger.valueOf(3))) {
+		if (N.mod(BigInteger.valueOf(4)).equals(BigInteger.valueOf(3))) {
 			return sqrtRatio3Mod4(curve, u, v);
 		} else {
 			return sqrtRatioGeneric(curve, u, v);
@@ -228,27 +233,27 @@ public class ECCurveHasher {
 	 */
 	protected SqrtRatioResult sqrtRatioGeneric(ECCurve curve, ECFieldElement u, ECFieldElement v) {
 		var l = BigInteger.ZERO;
-		for (var o = q.subtract(BigInteger.ONE); o.mod(BigInteger.TWO).equals(BigInteger.ZERO); o = o.divide(BigInteger.TWO))
+		for (var o = Q.subtract(BigInteger.ONE); o.mod(BigInteger.TWO).equals(BigInteger.ZERO); o = o.divide(BigInteger.TWO))
 			l = l.add(BigInteger.ONE);
 
 		final var c1 = l;
 		final var _2n_pow_c1_1 = BigInteger.TWO.shiftLeft(c1.subtract(BigInteger.TWO).intValue());
 		final var _2n_pow_c1   = _2n_pow_c1_1.multiply(BigInteger.TWO);
-		final var c2 = q.subtract(BigInteger.ONE).divide(_2n_pow_c1);
+		final var c2 = Q.subtract(BigInteger.ONE).divide(_2n_pow_c1);
 		final var c3 = c2.subtract(BigInteger.ONE).divide(BigInteger.TWO);
 		final var c4 = _2n_pow_c1.subtract(BigInteger.ONE);
 		final var c5 = _2n_pow_c1_1;
-		final var c6 = curve.fromBigInteger(Z.toBigInteger().modPow(c2, q));
-		final var c7 = curve.fromBigInteger(Z.toBigInteger().modPow(c2.add(BigInteger.ONE).divide(BigInteger.TWO), q));
+		final var c6 = curve.fromBigInteger(Z.toBigInteger().modPow(c2, Q));
+		final var c7 = curve.fromBigInteger(Z.toBigInteger().modPow(c2.add(BigInteger.ONE).divide(BigInteger.TWO), Q));
 
 		var tv1 = c6;
-		var tv2 = curve.fromBigInteger(v.toBigInteger().modPow(c4, q));
+		var tv2 = curve.fromBigInteger(v.toBigInteger().modPow(c4, Q));
 		var tv3 = tv2.square().multiply(v);
-		var tv5 = curve.fromBigInteger(tv3.multiply(u).toBigInteger().modPow(c3, q)).multiply(tv2);
+		var tv5 = curve.fromBigInteger(tv3.multiply(u).toBigInteger().modPow(c3, Q)).multiply(tv2);
 		tv2 = tv5.multiply(v);
 		tv3 = tv5.multiply(u);
 		var tv4 = tv3.multiply(tv2);
-		tv5 = curve.fromBigInteger(tv4.toBigInteger().modPow(c5, q));
+		tv5 = curve.fromBigInteger(tv4.toBigInteger().modPow(c5, Q));
 		final var isQR = tv5.isOne();
 		tv2 = tv3.multiply(c7);
 		tv5 = tv4.multiply(tv1);
@@ -257,7 +262,7 @@ public class ECCurveHasher {
 
 		for (var i = c1; i.compareTo(BigInteger.ONE) >= 1; i = i.subtract(BigInteger.ONE)) {
 			var _tv5 = BigInteger.TWO.shiftLeft(i.subtract(BigInteger.valueOf(3)).intValue());
-			var tvv5 = curve.fromBigInteger(tv4.toBigInteger().modPow(_tv5, q));
+			var tvv5 = curve.fromBigInteger(tv4.toBigInteger().modPow(_tv5, Q));
 			final var e1 = tvv5.isOne();
 			tv2 = tv3.multiply(tv1);
 			tv1 = tv1.multiply(tv1);
@@ -275,12 +280,12 @@ public class ECCurveHasher {
 	 * @return
 	 */
 	protected SqrtRatioResult sqrtRatio3Mod4(ECCurve curve, ECFieldElement u, ECFieldElement v) {
-		final var c1 = q.subtract(BigInteger.valueOf(3)).divide(BigInteger.valueOf(4));
+		final var c1 = Q.subtract(BigInteger.valueOf(3)).divide(BigInteger.valueOf(4));
 		final var c2 = Z.negate().sqrt();
 
 		var tv2 = u.multiply(v);
 		var tv1 = v.square().multiply(tv2);
-		var y1 = curve.fromBigInteger(tv1.toBigInteger().modPow(c1, q)).multiply(tv2);
+		var y1 = curve.fromBigInteger(tv1.toBigInteger().modPow(c1, Q)).multiply(tv2);
 		var y2 = y1.multiply(c2);
 		var tv3 = y1.square().multiply(v);
 		final var isQR = tv3.equals(u);
@@ -409,7 +414,7 @@ public class ECCurveHasher {
 	 * @return
 	 */
 	protected ECFieldElement[][] hashToField(ECCurve curve, byte[] input, byte[] dst, int m, int k, int count) {
-		final var L = Math.ceilDiv(curve.getFieldSize() + k, 8);
+		final var L = getMinHashLength();
 		final var lengthInBytes = count * m * L;
 		final var uniformBytes = expandMessage(hash, input, dst, lengthInBytes, k);
 		final var u = new ECFieldElement[count][];
@@ -418,7 +423,7 @@ public class ECCurveHasher {
 			for (int j = 0; j < m; j++) {
 				final var elmOffset = L * (j + i * m);
 				final var tv = Arrays.copyOfRange(uniformBytes, elmOffset, elmOffset + L);
-				e[j] = curve.fromBigInteger(BigIntegers.fromUnsignedByteArray(tv).mod(q));
+				e[j] = curve.fromBigInteger(BigIntegers.fromUnsignedByteArray(tv).mod(Q));
 			}
 			u[i] = e;
 		}
@@ -495,7 +500,6 @@ public class ECCurveHasher {
 		if (!q.isValid()) throw new IllegalStateException("EncodeToCurve Q invalid");
 		return clearCofactor(curve, q);
 	}
-
 
 	/**
 	 *
