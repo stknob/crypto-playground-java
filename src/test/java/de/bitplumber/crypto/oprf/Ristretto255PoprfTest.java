@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-import de.bitplumber.crypto.oprf.ristretto255.PoprfRistretto255Sha512;
-import de.bitplumber.crypto.oprf.ristretto255.AbstractRistretto255Sha512.Proof;
+import de.bitplumber.crypto.oprf.ristretto255.Ristretto255Poprf;
+import de.bitplumber.crypto.oprf.ristretto255.AbstractRistretto255.Proof;
 
 class Ristretto255PoprfTest {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] info, byte[] input,
@@ -49,7 +49,7 @@ class Ristretto255PoprfTest {
 	@Test
 	void testRFC9497TestVectors() {
 		for (final var vector : RFC9497TestVectors) {
-			final var poprf = new PoprfRistretto255Sha512(new PoprfRistretto255Sha512.PoprfParameter()
+			final var poprf = new Ristretto255Poprf(new Ristretto255Poprf.PoprfParameter()
 				.withBlindRandomScalar(vector.blind())
 				.withProofRandomScalar(vector.proofRandomScalar()));
 

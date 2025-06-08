@@ -12,7 +12,7 @@ import de.bitplumber.crypto.oprf.Labels;
 import de.bitplumber.crypto.oprf.Modes;
 import de.bitplumber.crypto.oprf.Poprf;
 
-public class PoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implements Poprf<Scalar, RistrettoElement, PoprfRistretto255Sha512.BlindResult, PoprfRistretto255Sha512.BlindEvaluateResult, AbstractRistretto255Sha512.Proof> {
+public class Ristretto255Poprf extends AbstractRistretto255 implements Poprf<Scalar, RistrettoElement, Ristretto255Poprf.BlindResult, Ristretto255Poprf.BlindEvaluateResult, AbstractRistretto255.Proof> {
 	public static record BlindResult(Scalar blind, RistrettoElement blindedElement, RistrettoElement tweakedKey) {}
 	public static final record BlindEvaluateResult(RistrettoElement evaluatedElement, byte[] proof) {}
 	private final PoprfParameter params;
@@ -26,11 +26,11 @@ public class PoprfRistretto255Sha512 extends AbstractRistretto255Sha512 implemen
 		return CONTEXT;
 	}
 
-	public PoprfRistretto255Sha512() {
+	public Ristretto255Poprf() {
 		this.params = DEFAULT_PARAMETER;
 	}
 
-	public PoprfRistretto255Sha512(PoprfParameter params) {
+	public Ristretto255Poprf(PoprfParameter params) {
 		this.params = params;
 	}
 

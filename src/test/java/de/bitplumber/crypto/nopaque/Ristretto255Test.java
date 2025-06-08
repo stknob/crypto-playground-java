@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Test;
 
 import de.bitplumber.crypto.nopaque.ristretto255.Client;
 import de.bitplumber.crypto.nopaque.ristretto255.Server;
-import de.bitplumber.crypto.nopaque.ristretto255.AbstractRistretto255Sha512.RegistrationRequest;
+import de.bitplumber.crypto.nopaque.ristretto255.AbstractRistretto255.RegistrationRequest;
 import de.bitplumber.crypto.nopaque.ristretto255.Server.RegistrationRecord;
 import de.bitplumber.crypto.oprf.KeyPair;
 
-class NopaqueRistretto255SHA512Test {
+class Ristretto255Test {
 	private static final record OpaqueDraftTestVector(byte[] clientIdentity, byte[] serverIdentity, byte[] context, byte[] oprfSeed, byte[] credentialId, byte[] password, byte[] envelopeNonce, byte[] maskingNonce,
 		byte[] serverSecretKey, byte[] serverPublicKey, byte[] blindRegistration, byte[] blindLogin, byte[] clientPublicKey, byte[] authKey, byte[] randomizedPassword, byte[] envelope, byte[] handshakeSecret,
 		byte[] oprfKey, byte[] registrationRequest, byte[] registrationResponse, byte[] registrationUpload, byte[] recoverRequest, byte[] recoverResponse, byte[] exportKey) {}

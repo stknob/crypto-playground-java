@@ -16,7 +16,7 @@ import de.bitplumber.crypto.oprf.Oprf;
 /**
  * Server implementation of NOPAQUE-Ristretto255-SHA512
  */
-public class Server extends AbstractRistretto255Sha512 {
+public class Server extends AbstractRistretto255 {
 	private final ServerParameter params;
 
 	public Server() {

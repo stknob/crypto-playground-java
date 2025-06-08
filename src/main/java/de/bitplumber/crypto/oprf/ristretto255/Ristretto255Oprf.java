@@ -11,7 +11,7 @@ import de.bitplumber.crypto.oprf.Labels;
 import de.bitplumber.crypto.oprf.Modes;
 import de.bitplumber.crypto.oprf.Oprf;
 
-public class OprfRistretto255Sha512 extends AbstractRistretto255Sha512 implements Oprf<Scalar, RistrettoElement, OprfRistretto255Sha512.BlindResult> {
+public class Ristretto255Oprf extends AbstractRistretto255 implements Oprf<Scalar, RistrettoElement, Ristretto255Oprf.BlindResult> {
 	public static record BlindResult(Scalar blind, RistrettoElement blindedElement) {}
 
 	private static final byte[] CONTEXT = Arrays.concatenate(new byte[][]{

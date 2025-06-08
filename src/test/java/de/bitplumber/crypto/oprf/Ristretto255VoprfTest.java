@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-import de.bitplumber.crypto.oprf.ristretto255.VoprfRistretto255Sha512;
-import de.bitplumber.crypto.oprf.ristretto255.AbstractRistretto255Sha512.Proof;
+import de.bitplumber.crypto.oprf.ristretto255.Ristretto255Voprf;
+import de.bitplumber.crypto.oprf.ristretto255.AbstractRistretto255.Proof;
 
 class Ristretto255VoprfTest {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] input,
@@ -48,7 +48,7 @@ class Ristretto255VoprfTest {
 	void testRFC9497TestVectors() {
 
 		for (final var vector : RFC9497TestVectors) {
-			final var voprf = new VoprfRistretto255Sha512(new VoprfRistretto255Sha512.VoprfParameter()
+			final var voprf = new Ristretto255Voprf(new Ristretto255Voprf.VoprfParameter()
 				.withBlindRandomScalar(vector.blind())
 				.withProofRandomScalar(vector.proofRandomScalar()));
 			final var keypair = assertDoesNotThrow(() -> voprf.deriveKeyPair(vector.seed(), vector.keyInfo()));

@@ -15,7 +15,7 @@ import de.bitplumber.crypto.nopaque.Stretcher;
 /**
  * Client implementation of NOPAQUE-Ristretto255-SHA512
  */
-public class Client extends AbstractRistretto255Sha512 {
+public class Client extends AbstractRistretto255 {
 	/** Client-side state, used for registration and recover process to hold information required by steps */
 	private static final record ClientState(byte[] secret, byte[] blind) {}
 	private final ClientParameter params;
