@@ -10,7 +10,7 @@ class Ristretto255OprfTest {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] output) {}
 
-	private static final RFC9497TestVector[] RFC9497TestVectors = new RFC9497TestVector[]{
+	private static final RFC9497TestVector[] OPRF_TEST_VECTORS = new RFC9497TestVector[]{
 		// RFC 9497 - ristretto255-SHA512 - OPRF - Test Vector 1, Batch Size 1
 		new RFC9497TestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
@@ -39,7 +39,7 @@ class Ristretto255OprfTest {
 	void testRFC9497TestVectors() {
 		final var oprf = new Ristretto255Oprf();
 
-		for (final var vector : RFC9497TestVectors) {
+		for (final var vector : OPRF_TEST_VECTORS) {
 			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey());
 

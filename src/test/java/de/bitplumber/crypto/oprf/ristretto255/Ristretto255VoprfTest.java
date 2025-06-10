@@ -12,7 +12,7 @@ class Ristretto255VoprfTest {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
 
-	private static final RFC9497TestVector[] RFC9497TestVectors = new RFC9497TestVector[]{
+	private static final RFC9497TestVector[] VOPRF_TEST_VECTORS = new RFC9497TestVector[]{
 		// ristretto255-SHA512 - VOPRF - Test Vector 1, Batch Size 1
 		new RFC9497TestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
@@ -45,8 +45,7 @@ class Ristretto255VoprfTest {
 
 	@Test
 	void testRFC9497TestVectors() {
-
-		for (final var vector : RFC9497TestVectors) {
+		for (final var vector : VOPRF_TEST_VECTORS) {
 			final var voprf = new Ristretto255Voprf(new Ristretto255Voprf.VoprfParameter()
 				.withBlindRandomScalar(vector.blind())
 				.withProofRandomScalar(vector.proofRandomScalar()));

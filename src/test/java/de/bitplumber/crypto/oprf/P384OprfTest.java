@@ -30,7 +30,7 @@ class P384OprfTest extends GenericOprfTestBase {
 	};
 
 	@Test
-	void testRFC9497TestVectors() {
+	void testOprfTestVectors() { //NOSONAR
 		final var oprf = ECCurveOprf.createP384();
 		runTestVectors(oprf, OPRF_TEST_VECTORS);
 	}

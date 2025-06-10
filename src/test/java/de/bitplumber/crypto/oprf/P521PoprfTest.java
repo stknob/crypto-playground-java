@@ -4,7 +4,7 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
 class P521PoprfTest extends GenericOprfTestBase {
-	private static final RFC9497PoprfTestVector[] RFC_TEST_VECTORS = new RFC9497PoprfTestVector[]{
+	private static final RFC9497PoprfTestVector[] POPRF_TEST_VECTORS = new RFC9497PoprfTestVector[]{
 		// P512-SHA512 - POPRF - Test Vector 1, Batch Size 1
 		new RFC9497PoprfTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
@@ -38,8 +38,8 @@ class P521PoprfTest extends GenericOprfTestBase {
 	};
 
 	@Test
-	void testRFC9497TestVectors() {
+	void testPoprfTestVectors() { //NOSONAR
 		final var poprf = ECCurvePoprf.createP521();
-		runTestVectors(poprf, RFC_TEST_VECTORS);
+		runTestVectors(poprf, POPRF_TEST_VECTORS);
 	}
 }

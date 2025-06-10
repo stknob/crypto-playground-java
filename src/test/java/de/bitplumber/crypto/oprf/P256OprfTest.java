@@ -30,13 +30,13 @@ class P256OprfTest extends GenericOprfTestBase {
 	};
 
 	@Test
-	void testRFC9497TestVectors() {
+	void testOprfTestVectors() { //NOSONAR
 		final var oprf = ECCurveOprf.createP256();
 		runTestVectors(oprf, OPRF_TEST_VECTORS);
 	}
 
 	@Test
-	void testOprfRoundtrips() {
+	void testOprfRandomized() { //NOSONAR
 		final var oprf = ECCurveOprf.createP256();
 		runRandomizedRountrip(oprf);
 	}
