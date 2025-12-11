@@ -84,14 +84,14 @@ class Ristretto255Test {
 	void testOpaqueDraftTestVectors() {
 		for (final var vector : opaqueDraftTestVectors) {
 			final var clientParams = new Client.ClientParameter()
-				.withCustomDeriveDhKeypairLabel("OPAQUE-DeriveDiffieHellmanKeyPair")
+				.withCustomDeriveDhKeyPairLabel("OPAQUE-DeriveDiffieHellmanKeyPair")
 				.withEnvelopeNonce(vector.envelopeNonce())
 				.withBlindRegistration(vector.blindRegistration())
 				.withBlindRecover(vector.blindLogin());
 
 
 			final var serverParams = new Server.ServerParameter()
-				.withCustomDeriveKeypairLabel("OPAQUE-DeriveKeyPair")
+				.withCustomDeriveKeyPairLabel("OPAQUE-DeriveKeyPair")
 				.withMaskingNonce(vector.maskingNonce());
 
 			final var client = new Client(Stretcher.IDENTITY, clientParams);
@@ -119,8 +119,8 @@ class Ristretto255Test {
 			final var recoverRequest = assertDoesNotThrow(() -> client.createRecoverRequest(vector.password()));
 			assertArrayEquals(vector.recoverRequest(), recoverRequest.toByteArray());
 
-			final var serverKeypair = new OPRFKeyPair(vector.serverSecretKey(), vector.serverPublicKey());
-			final var recoverResponse = assertDoesNotThrow(() -> server.createRecoverResponse(serverKeypair, serverRecord, credentialId, vector.oprfSeed(), recoverRequest));
+			final var serverKeyPair = new OPRFKeyPair(vector.serverSecretKey(), vector.serverPublicKey());
+			final var recoverResponse = assertDoesNotThrow(() -> server.createRecoverResponse(serverKeyPair, serverRecord, credentialId, vector.oprfSeed(), recoverRequest));
 			assertArrayEquals(vector.recoverResponse(), recoverResponse.toByteArray());
 
 			final var recoveredExportKey = assertDoesNotThrow(() -> client.finalizeRecoverRequest(recoverResponse, vector.serverIdentity(), vector.clientIdentity()));
@@ -141,10 +141,10 @@ class Ristretto255Test {
 		final var registerResult = assertDoesNotThrow(() -> client.createRegistrationRequest(password));
 		final var registerRequest = registerResult.request();
 
-		final var serverKeypair = server.randomKeyPair();
+		final var serverKeyPair = server.randomKeyPair();
 		final var credentialId = CredentialIdentifier.fromBytes(client.randomSecret());
 		final var oprfSeed = server.randomSeed();
-		final var reqResponse = assertDoesNotThrow(() -> server.createRegistrationResponse(RegistrationRequest.fromBytes(registerRequest), serverKeypair.publicKey(), credentialId, oprfSeed));
+		final var reqResponse = assertDoesNotThrow(() -> server.createRegistrationResponse(RegistrationRequest.fromBytes(registerRequest), serverKeyPair.publicKey(), credentialId, oprfSeed));
 
 		final var finalizeResult = assertDoesNotThrow(() -> client.finalizeRegistrationRequest(reqResponse, null, null));
 		final var exportKey = finalizeResult.exportKey();
@@ -157,7 +157,7 @@ class Ristretto255Test {
 		 * Recover
 		 */
 		final var recoverRequest = assertDoesNotThrow(() -> client.createRecoverRequest(password));
-		final var recoverResponse = assertDoesNotThrow(() -> server.createRecoverResponse(serverKeypair, serverRecord, credentialId, oprfSeed, recoverRequest));
+		final var recoverResponse = assertDoesNotThrow(() -> server.createRecoverResponse(serverKeyPair, serverRecord, credentialId, oprfSeed, recoverRequest));
 		final var recoveredExportKey = assertDoesNotThrow(() -> client.finalizeRecoverRequest(recoverResponse, null, null));
 		assertArrayEquals(exportKey, recoveredExportKey);
 	}

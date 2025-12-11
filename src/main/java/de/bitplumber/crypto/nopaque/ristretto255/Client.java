@@ -38,16 +38,16 @@ public class Client extends AbstractRistretto255 {
 	}
 
 	public static final ClientParameter DEFAULT_PARAMETER = new ClientParameter()
-		.withCustomDeriveDhKeypairLabel(Labels.NOPAQUE_DERIVE_DH_KEYPAIR);
+		.withCustomDeriveDhKeyPairLabel(Labels.NOPAQUE_DERIVE_DH_KEYPAIR);
 
 	public static final class ClientParameter {
-		protected byte[] customDeriveDhKeypairLabel;
+		protected byte[] customDeriveDhKeyPairLabel;
 		protected byte[] envelopeNonce;
 		protected byte[] blindRegistration;
 		protected byte[] blindRecover;
 
-		public byte[] customDeriveDhKeypairLabel() {
-			return customDeriveDhKeypairLabel;
+		public byte[] customDeriveDhKeyPairLabel() {
+			return customDeriveDhKeyPairLabel;
 		}
 
 		public byte[] envelopeNonce() {
@@ -68,9 +68,9 @@ public class Client extends AbstractRistretto255 {
 		 * @param label
 		 * @return
 		 */
-		public ClientParameter withCustomDeriveDhKeypairLabel(byte[] label) {
+		public ClientParameter withCustomDeriveDhKeyPairLabel(byte[] label) {
 			Objects.requireNonNull(label, "label");
-			this.customDeriveDhKeypairLabel = label;
+			this.customDeriveDhKeyPairLabel = label;
 			return this;
 		}
 
@@ -80,9 +80,9 @@ public class Client extends AbstractRistretto255 {
 		 * @param label
 		 * @return
 		 */
-		public ClientParameter withCustomDeriveDhKeypairLabel(String label) {
+		public ClientParameter withCustomDeriveDhKeyPairLabel(String label) {
 			Objects.requireNonNull(label, "label");
-			this.customDeriveDhKeypairLabel = label.getBytes(StandardCharsets.UTF_8);
+			this.customDeriveDhKeyPairLabel = label.getBytes(StandardCharsets.UTF_8);
 			return this;
 		}
 
@@ -117,15 +117,22 @@ public class Client extends AbstractRistretto255 {
 		);
 	}
 
+	private void clearArrays(byte[] ...args) {
+		for (final byte[] arr : args) {
+			Arrays.clear(arr);
+		}
+	}
+
 	private StoreResult store(byte[] randomizedPassword, byte[] serverPublicKey, byte[] serverIdentity, byte[] clientIdentity) throws Exception {
 		final var envelopeNonce = ObjectUtils.defaultIfNull(params.envelopeNonce(), RandomUtils.secureStrong().randomBytes(N_N));
+
 		final var maskingKey = expand(randomizedPassword, Labels.MASKING_KEY, N_H);
 		final var exportKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.EXPORT_KEY), N_H);
 		final var authKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.AUTH_KEY), N_H);
-		final var seed = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.PRIVATE_KEY), N_SEED);
 
-		final var clientKeypair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveDhKeypairLabel(), Labels.NOPAQUE_DERIVE_DH_KEYPAIR));
-		final var cleartextCredentials = createCleartextCredentials(serverPublicKey, clientKeypair.publicKey(), serverIdentity, clientIdentity);
+		final var seed = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.PRIVATE_KEY), N_SEED);
+		final var clientKeyPair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveDhKeyPairLabel(), Labels.NOPAQUE_DERIVE_DH_KEYPAIR));
+		final var cleartextCredentials = createCleartextCredentials(serverPublicKey, clientKeyPair.publicKey(), serverIdentity, clientIdentity);
 
 		final var authTag = hmac(authKey, Arrays.concatenate(new byte[][]{
 			envelopeNonce,
@@ -136,7 +143,7 @@ public class Client extends AbstractRistretto255 {
 			cleartextCredentials.clientIdentity()
 		}));
 
-		return new StoreResult(Arrays.concatenate(envelopeNonce, authTag), clientKeypair.publicKey(), maskingKey, exportKey);
+		return new StoreResult(Arrays.concatenate(envelopeNonce, authTag), clientKeyPair.publicKey(), maskingKey, exportKey);
 	}
 
 	private RecoverResult recover(byte[] randomizedPassword, byte[] serverPublicKey, byte[] envelope, byte[] serverIdentity, byte[] clientIdentity) throws Exception {
@@ -145,10 +152,10 @@ public class Client extends AbstractRistretto255 {
 
 		final var exportKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.EXPORT_KEY), N_H);
 		final var authKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.AUTH_KEY), N_H);
-		final var seed = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.PRIVATE_KEY), N_SEED);
 
-		final var clientKeypair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveDhKeypairLabel(), Labels.NOPAQUE_DERIVE_DH_KEYPAIR));
-		final var cleartextCredentials = createCleartextCredentials(serverPublicKey, clientKeypair.publicKey(), serverIdentity, clientIdentity);
+		final var seed = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.PRIVATE_KEY), N_SEED);
+		final var clientKeyPair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveDhKeyPairLabel(), Labels.NOPAQUE_DERIVE_DH_KEYPAIR));
+		final var cleartextCredentials = createCleartextCredentials(serverPublicKey, clientKeyPair.publicKey(), serverIdentity, clientIdentity);
 
 		final var expectedAuthTag = hmac(authKey, Arrays.concatenate(new byte[][]{
 			envelopeNonce,
@@ -159,8 +166,10 @@ public class Client extends AbstractRistretto255 {
 			cleartextCredentials.clientIdentity()
 		}));
 
-		if (!Arrays.constantTimeAreEqual(expectedAuthTag, authTag))
+		if (!Arrays.constantTimeAreEqual(expectedAuthTag, authTag)) {
+			clearArrays(exportKey, authKey, seed, clientKeyPair.secretKey(), clientKeyPair.publicKey());
 			throw new IllegalArgumentException("authentication tags do not match");
+		}
 
 		return new RecoverResult(exportKey);
 	}
