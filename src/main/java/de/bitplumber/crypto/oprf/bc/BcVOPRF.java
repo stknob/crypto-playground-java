@@ -13,44 +13,46 @@ import java.util.Objects;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 
-import de.bitplumber.crypto.oprf.bc.ECCurveSuite.ECScalar;
+import de.bitplumber.crypto.oprf.bc.BcOPRFSuite.ECScalar;
+import de.bitplumber.crypto.oprf.bc.BcOPRFSuite.Proof;
 import de.bitplumber.crypto.oprf.*;
 
-public class ECCurveOprf implements Oprf<ECScalar, ECPoint, ECCurveOprf.BlindResult> {
+public class BcVOPRF implements VOPRF<ECScalar, ECPoint, BcVOPRF.BlindResult, BcVOPRF.BlindEvaluateResult, BcOPRFSuite.Proof> {
 	public static record BlindResult(ECScalar blind, ECPoint blindedElement) {}
+	public static final record BlindEvaluateResult(ECPoint evaluatedElement, byte[] proof) {}
 
-	private final ECCurveSuite suite;
+    private final BcOPRFSuite suite;
 	private final byte[] context;
 
-	private ECCurveOprf(final ECCurveSuite suite) {
-		this.suite = suite;
+	public BcVOPRF(final BcOPRFSuite suite) {
+        this.suite  = suite;
 		this.context = Arrays.concatenate(new byte[][]{
-			Labels.CONTEXT_PREFIX, Modes.OPRF,
+			Labels.CONTEXT_PREFIX, Modes.VOPRF,
 			("-" + suite.getName()).getBytes(StandardCharsets.UTF_8),
 		});
 	}
 
-	public static ECCurveOprf createP256() {
-		return new ECCurveOprf(ECCurveSuite.createP256());
+	public static BcVOPRF createP256() {
+		return new BcVOPRF(BcOPRFSuite.createP256());
 	}
 
-	public static ECCurveOprf createP384() {
-		return new ECCurveOprf(ECCurveSuite.createP384());
+	public static BcVOPRF createP384() {
+		return new BcVOPRF(BcOPRFSuite.createP384());
 	}
 
-	public static ECCurveOprf createP521() {
-		return new ECCurveOprf(ECCurveSuite.createP521());
+	public static BcVOPRF createP521() {
+		return new BcVOPRF(BcOPRFSuite.createP521());
 	}
 
-	public static ECCurveOprf createSecp256k1() {
-		return new ECCurveOprf(ECCurveSuite.createSecp256k1());
+	public static BcVOPRF createSecp256k1() {
+		return new BcVOPRF(BcOPRFSuite.createSecp256k1());
 	}
 
-	public KeyPair randomKeyPair() {
+	public OPRFKeyPair randomKeyPair() {
 		return suite.randomKeyPair();
 	}
 
-	public KeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception {
+	public OPRFKeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception {
 		return suite.deriveKeyPair(seed, info, context);
 	}
 
@@ -74,6 +76,14 @@ public class ECCurveOprf implements Oprf<ECScalar, ECPoint, ECCurveOprf.BlindRes
 		return suite.decodeScalar(encoded);
 	}
 
+	public Proof decodeProof(byte[] encoded) {
+		return Proof.fromBytes(suite, encoded);
+	}
+
+	public byte[] encodeProof(Proof proof) {
+		return proof.toByteArray();
+	}
+
 	private BlindResult doBlind(byte[] input, ECScalar blind) throws Exception {
 		final var inputElement = suite.hashToGroup(input, null, context);
 		if (inputElement.isInfinity() || !inputElement.isValid())
@@ -92,16 +102,35 @@ public class ECCurveOprf implements Oprf<ECScalar, ECPoint, ECCurveOprf.BlindRes
 		return doBlind(input, suite.randomScalar());
 	}
 
-	public ECPoint blindEvaluate(byte[] serverSecretKey, ECPoint blindedElement) throws Exception {
+	private BlindEvaluateResult doBlindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, ECPoint blindedElement, ECScalar proofRandomScalar) throws Exception {
 		final var skS = suite.decodeScalar(serverSecretKey);
-		return blindedElement.multiply(skS.toBigInteger());
+		final var pkS = suite.decodeElement(serverPublicKey);
+		final var evaluatedElement = blindedElement.multiply(skS.toBigInteger());
+		final var blindedElements  = new ECPoint[]{ blindedElement };
+		final var evaluatedElements = new ECPoint[]{ evaluatedElement };
+		final var proof = suite.generateProof(skS, suite.getG(), pkS, blindedElements, evaluatedElements, proofRandomScalar, context);
+		return new BlindEvaluateResult(evaluatedElement, encodeProof(proof));
 	}
 
-	public byte[] finalize(byte[] input, ECScalar blind, ECPoint evaluatedElement) throws Exception {
+	protected BlindEvaluateResult blindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, ECPoint blindedElement, byte[] proofRandomScalar) throws Exception {
+		Objects.requireNonNull(proofRandomScalar, "Mandatory parameter 'proofRandomScalar' missing");
+		return doBlindEvaluate(serverSecretKey, serverPublicKey, blindedElement, suite.decodeScalar(proofRandomScalar));
+	}
+
+	public BlindEvaluateResult blindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, ECPoint blindedElement) throws Exception {
+		return doBlindEvaluate(serverSecretKey, serverPublicKey, blindedElement, null);
+	}
+
+	public byte[] finalize(byte[] input, ECScalar blind, ECPoint evaluatedElement, ECPoint blindedElement, byte[] serverPublicKey, Proof proof) throws Exception {
+		final var pkS = suite.decodeElement(serverPublicKey);
+		final var blindedElements = new ECPoint[]{ blindedElement };
+		final var evaluatedElements = new ECPoint[]{ evaluatedElement };
+		if (!suite.verifyProof(suite.getG(), pkS, blindedElements, evaluatedElements, proof, context))
+			throw new Exception("Failed to verify proof");
+
 		final var invBlind = suite.invertScalar(blind);
 		final var n = evaluatedElement.multiply(invBlind.toBigInteger());
 		final var unblindedElement = suite.encodeElement(n);
-
 		return suite.hash(Arrays.concatenate(new byte[][]{
 			suite.I2OSP(input.length, 2), input,
 			suite.I2OSP(unblindedElement.length, 2), unblindedElement,
@@ -124,4 +153,5 @@ public class ECCurveOprf implements Oprf<ECScalar, ECPoint, ECCurveOprf.BlindRes
 			Labels.FINALIZE
 		}));
 	}
+
 }

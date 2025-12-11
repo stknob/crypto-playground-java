@@ -16,8 +16,8 @@ import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.Bytes;
 
-public class ExpandMessage {
-	private ExpandMessage() { /* */ }
+public class BcExpandMessage {
+	private BcExpandMessage() { /* */ }
 
 	protected static byte[] hashXMD(ExtendedDigest md, byte[] input) {
 		final var output = new byte[md.getDigestSize()];

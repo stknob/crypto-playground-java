@@ -7,4 +7,4 @@
  */
 package de.bitplumber.crypto.oprf;
 
-public record KeyPair(byte[] secretKey, byte[] publicKey) {}
+public record OPRFKeyPair(byte[] secretKey, byte[] publicKey) {}

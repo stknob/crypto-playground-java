@@ -11,12 +11,10 @@ package de.bitplumber.crypto.oprf;
  * @param S Scalar type
  * @param E Field Element (= Point) type
  * @param BR Blind result type
- * @param BER BlindEvaluate result type
- * @param P Proof type
  */
-public interface Voprf<S, E, BR, BER, P> {
-	public KeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception;
-	public KeyPair randomKeyPair();
+public interface OPRF<S, E, BR> {
+	public OPRFKeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception;
+	public OPRFKeyPair randomKeyPair();
 
 	public byte[] encodeElement(E element);
 	public E decodeElement(byte[] input) throws Exception;
@@ -26,7 +24,7 @@ public interface Voprf<S, E, BR, BER, P> {
 	public S randomScalar();
 
 	public BR blind(byte[] input) throws Exception;
-	public BER blindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, E blindedElement) throws Exception;
-	public byte[] finalize(byte[] input, S blind, E evaluatedElement, E blindedElement, byte[] serverPublicKey, P proof) throws Exception;
+	public E blindEvaluate(byte[] serverSecretKey, E blindedElement) throws Exception;
+	public byte[] finalize(byte[] input, S blind, E evaluatedElement) throws Exception;
 	public byte[] evaluate(byte[] serverSecretKey, byte[] input) throws Exception;
 }

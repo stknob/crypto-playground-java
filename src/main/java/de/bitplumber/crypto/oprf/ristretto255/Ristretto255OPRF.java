@@ -16,9 +16,9 @@ import com.weavechain.curve25519.Scalar;
 
 import de.bitplumber.crypto.oprf.Labels;
 import de.bitplumber.crypto.oprf.Modes;
-import de.bitplumber.crypto.oprf.Oprf;
+import de.bitplumber.crypto.oprf.OPRF;
 
-public class Ristretto255Oprf extends AbstractRistretto255 implements Oprf<Scalar, RistrettoElement, Ristretto255Oprf.BlindResult> {
+public class Ristretto255OPRF extends AbstractRistretto255 implements OPRF<Scalar, RistrettoElement, Ristretto255OPRF.BlindResult> {
 	public static record BlindResult(Scalar blind, RistrettoElement blindedElement) {}
 
 	private static final byte[] CONTEXT = Arrays.concatenate(new byte[][]{

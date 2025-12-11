@@ -17,9 +17,9 @@ import com.weavechain.curve25519.Scalar;
 
 import de.bitplumber.crypto.oprf.Labels;
 import de.bitplumber.crypto.oprf.Modes;
-import de.bitplumber.crypto.oprf.Voprf;
+import de.bitplumber.crypto.oprf.VOPRF;
 
-public class Ristretto255Voprf extends AbstractRistretto255 implements Voprf<Scalar, RistrettoElement, Ristretto255Voprf.BlindResult, Ristretto255Voprf.BlindEvaluateResult, AbstractRistretto255.Proof> {
+public class Ristretto255VOPRF extends AbstractRistretto255 implements VOPRF<Scalar, RistrettoElement, Ristretto255VOPRF.BlindResult, Ristretto255VOPRF.BlindEvaluateResult, AbstractRistretto255.Proof> {
 	public static record BlindResult(Scalar blind, RistrettoElement blindedElement) {}
 	public static final record BlindEvaluateResult(RistrettoElement evaluatedElement, byte[] proof) {}
 	private final VoprfParameter params;
@@ -33,11 +33,11 @@ public class Ristretto255Voprf extends AbstractRistretto255 implements Voprf<Sca
 		return CONTEXT;
 	}
 
-	public Ristretto255Voprf() {
+	public Ristretto255VOPRF() {
 		this.params = DEFAULT_PARAMETER;
 	}
 
-	public Ristretto255Voprf(VoprfParameter params) {
+	public Ristretto255VOPRF(VoprfParameter params) {
 		this.params = params;
 	}
 

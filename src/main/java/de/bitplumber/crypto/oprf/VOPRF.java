@@ -14,9 +14,9 @@ package de.bitplumber.crypto.oprf;
  * @param BER BlindEvaluate result type
  * @param P Proof type
  */
-public interface Poprf<S, E, BR, BER, P> {
-	public KeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception;
-	public KeyPair randomKeyPair();
+public interface VOPRF<S, E, BR, BER, P> {
+	public OPRFKeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception;
+	public OPRFKeyPair randomKeyPair();
 
 	public byte[] encodeElement(E element);
 	public E decodeElement(byte[] input) throws Exception;
@@ -25,8 +25,8 @@ public interface Poprf<S, E, BR, BER, P> {
 	public S decodeScalar(byte[] input) throws Exception;
 	public S randomScalar();
 
-	public BR blind(byte[] input, byte[] info, byte[] serverPublicKey) throws Exception;
-	public BER blindEvaluate(byte[] serverSecretKey, E blindedElement, byte[] info) throws Exception;
-	public byte[] finalize(byte[] input, S blind, E evaluatedElement, E blindedElement, P proof, byte[] info, E tweakedKey) throws Exception;
-	public byte[] evaluate(byte[] serverSecretKey, byte[] input, byte[] info) throws Exception;
+	public BR blind(byte[] input) throws Exception;
+	public BER blindEvaluate(byte[] serverSecretKey, byte[] serverPublicKey, E blindedElement) throws Exception;
+	public byte[] finalize(byte[] input, S blind, E evaluatedElement, E blindedElement, byte[] serverPublicKey, P proof) throws Exception;
+	public byte[] evaluate(byte[] serverSecretKey, byte[] input) throws Exception;
 }

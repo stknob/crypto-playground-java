@@ -20,8 +20,8 @@ import com.weavechain.curve25519.CompressedRistretto;
 import com.weavechain.curve25519.RistrettoElement;
 import com.weavechain.curve25519.Scalar;
 
-import de.bitplumber.crypto.h2c.ExpandMessage;
-import de.bitplumber.crypto.oprf.KeyPair;
+import de.bitplumber.crypto.h2c.BcExpandMessage;
+import de.bitplumber.crypto.oprf.OPRFKeyPair;
 import de.bitplumber.crypto.oprf.Labels;
 
 public abstract class AbstractRistretto255 {
@@ -51,13 +51,13 @@ public abstract class AbstractRistretto255 {
 
 	protected RistrettoElement hashToGroup(byte[] hash, byte[] customDST) {
 		final var dst = ObjectUtils.defaultIfNull(customDST, Arrays.concatenate(Labels.HASH_TO_GROUP, context()));
-		final var uniformBytes = ExpandMessage.expandMessageXMD(new SHA512Digest(), hash, dst, HASH_OUTPUT_SIZE);
+		final var uniformBytes = BcExpandMessage.expandMessageXMD(new SHA512Digest(), hash, dst, HASH_OUTPUT_SIZE);
 		return RistrettoElement.fromUniformBytes(uniformBytes);
 	}
 
 	protected Scalar hashToScalar(byte[] hash, byte[] customDST) {
 		final var dst = ObjectUtils.defaultIfNull(customDST, Arrays.concatenate(Labels.HASH_TO_SCALAR, context()));
-		final var uniformBytes = ExpandMessage.expandMessageXMD(new SHA512Digest(), hash, dst, HASH_OUTPUT_SIZE);
+		final var uniformBytes = BcExpandMessage.expandMessageXMD(new SHA512Digest(), hash, dst, HASH_OUTPUT_SIZE);
 		return Scalar.fromBytesModOrderWide(uniformBytes);
 	}
 
@@ -66,13 +66,13 @@ public abstract class AbstractRistretto255 {
 		return Scalar.fromBytesModOrderWide(uniformBytes);
 	}
 
-	public KeyPair randomKeyPair() {
+	public OPRFKeyPair randomKeyPair() {
 		final var secretScalar  = randomScalar();
 		final var publicElement = RistrettoElement.BASEPOINT.multiply(secretScalar);
-		return new KeyPair(secretScalar.toByteArray(), publicElement.compress().toByteArray());
+		return new OPRFKeyPair(secretScalar.toByteArray(), publicElement.compress().toByteArray());
 	}
 
-	public KeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception {
+	public OPRFKeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception {
 		final var nullSafeInfo = ArrayUtils.nullToEmpty(info);
 		final var deriveInput = Arrays.concatenate(seed, I2OSP(nullSafeInfo.length, 2), nullSafeInfo);
 		final var deriveDST = Arrays.concatenate(Labels.DERIVE_KEYPAIR, context());
@@ -87,7 +87,7 @@ public abstract class AbstractRistretto255 {
 
 		final var secretKey = secretScalar.toByteArray();
 		final var publicKey = RistrettoElement.BASEPOINT.multiply(secretScalar).compress().toByteArray();
-		return new KeyPair(secretKey, publicKey);
+		return new OPRFKeyPair(secretKey, publicKey);
 	}
 
 	protected byte[] hash(byte[] input) {

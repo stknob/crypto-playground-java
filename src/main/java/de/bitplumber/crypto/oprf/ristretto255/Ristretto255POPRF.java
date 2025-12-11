@@ -17,9 +17,9 @@ import com.weavechain.curve25519.Scalar;
 
 import de.bitplumber.crypto.oprf.Labels;
 import de.bitplumber.crypto.oprf.Modes;
-import de.bitplumber.crypto.oprf.Poprf;
+import de.bitplumber.crypto.oprf.POPRF;
 
-public class Ristretto255Poprf extends AbstractRistretto255 implements Poprf<Scalar, RistrettoElement, Ristretto255Poprf.BlindResult, Ristretto255Poprf.BlindEvaluateResult, AbstractRistretto255.Proof> {
+public class Ristretto255POPRF extends AbstractRistretto255 implements POPRF<Scalar, RistrettoElement, Ristretto255POPRF.BlindResult, Ristretto255POPRF.BlindEvaluateResult, AbstractRistretto255.Proof> {
 	public static record BlindResult(Scalar blind, RistrettoElement blindedElement, RistrettoElement tweakedKey) {}
 	public static final record BlindEvaluateResult(RistrettoElement evaluatedElement, byte[] proof) {}
 	private final PoprfParameter params;
@@ -33,11 +33,11 @@ public class Ristretto255Poprf extends AbstractRistretto255 implements Poprf<Sca
 		return CONTEXT;
 	}
 
-	public Ristretto255Poprf() {
+	public Ristretto255POPRF() {
 		this.params = DEFAULT_PARAMETER;
 	}
 
-	public Ristretto255Poprf(PoprfParameter params) {
+	public Ristretto255POPRF(PoprfParameter params) {
 		this.params = params;
 	}
 

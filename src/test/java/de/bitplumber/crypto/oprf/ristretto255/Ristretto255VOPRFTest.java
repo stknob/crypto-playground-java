@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import de.bitplumber.crypto.oprf.ristretto255.AbstractRistretto255.Proof;
 
-class Ristretto255VoprfTest {
+class Ristretto255VOPRFTest {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
 
@@ -53,7 +53,7 @@ class Ristretto255VoprfTest {
 	@Test
 	void testRFC9497TestVectors() {
 		for (final var vector : VOPRF_TEST_VECTORS) {
-			final var voprf = new Ristretto255Voprf(new Ristretto255Voprf.VoprfParameter()
+			final var voprf = new Ristretto255VOPRF(new Ristretto255VOPRF.VoprfParameter()
 				.withBlindRandomScalar(vector.blind())
 				.withProofRandomScalar(vector.proofRandomScalar()));
 			final var keypair = assertDoesNotThrow(() -> voprf.deriveKeyPair(vector.seed(), vector.keyInfo()));

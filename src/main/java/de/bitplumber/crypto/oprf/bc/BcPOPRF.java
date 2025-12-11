@@ -13,18 +13,18 @@ import java.util.Objects;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 
-import de.bitplumber.crypto.oprf.bc.ECCurveSuite.ECScalar;
-import de.bitplumber.crypto.oprf.bc.ECCurveSuite.Proof;
+import de.bitplumber.crypto.oprf.bc.BcOPRFSuite.ECScalar;
+import de.bitplumber.crypto.oprf.bc.BcOPRFSuite.Proof;
 import de.bitplumber.crypto.oprf.*;
 
-public class ECCurvePoprf implements Poprf<ECScalar, ECPoint, ECCurvePoprf.BlindResult, ECCurvePoprf.BlindEvaluateResult, ECCurveSuite.Proof> {
+public class BcPOPRF implements POPRF<ECScalar, ECPoint, BcPOPRF.BlindResult, BcPOPRF.BlindEvaluateResult, BcOPRFSuite.Proof> {
 	public static record BlindResult(ECScalar blind, ECPoint blindedElement, ECPoint tweakedKey) {}
 	public static final record BlindEvaluateResult(ECPoint evaluatedElement, byte[] proof) {}
 
-    private final ECCurveSuite suite;
+    private final BcOPRFSuite suite;
 	private final byte[] context;
 
-	public ECCurvePoprf(final ECCurveSuite suite) {
+	public BcPOPRF(final BcOPRFSuite suite) {
         this.suite  = suite;
 		this.context = Arrays.concatenate(new byte[][]{
 			Labels.CONTEXT_PREFIX, Modes.POPRF,
@@ -32,27 +32,27 @@ public class ECCurvePoprf implements Poprf<ECScalar, ECPoint, ECCurvePoprf.Blind
 		});
 	}
 
-	public static ECCurvePoprf createP256() {
-		return new ECCurvePoprf(ECCurveSuite.createP256());
+	public static BcPOPRF createP256() {
+		return new BcPOPRF(BcOPRFSuite.createP256());
 	}
 
-	public static ECCurvePoprf createP384() {
-		return new ECCurvePoprf(ECCurveSuite.createP384());
+	public static BcPOPRF createP384() {
+		return new BcPOPRF(BcOPRFSuite.createP384());
 	}
 
-	public static ECCurvePoprf createP521() {
-		return new ECCurvePoprf(ECCurveSuite.createP521());
+	public static BcPOPRF createP521() {
+		return new BcPOPRF(BcOPRFSuite.createP521());
 	}
 
-	public static ECCurvePoprf createSecp256k1() {
-		return new ECCurvePoprf(ECCurveSuite.createSecp256k1());
+	public static BcPOPRF createSecp256k1() {
+		return new BcPOPRF(BcOPRFSuite.createSecp256k1());
 	}
 
-	public KeyPair randomKeyPair() {
+	public OPRFKeyPair randomKeyPair() {
 		return suite.randomKeyPair();
 	}
 
-	public KeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception {
+	public OPRFKeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception {
 		return suite.deriveKeyPair(seed, info, context);
 	}
 

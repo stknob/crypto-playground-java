@@ -10,7 +10,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
 
-import de.bitplumber.crypto.oprf.ristretto255.Ristretto255Oprf;
+import de.bitplumber.crypto.oprf.ristretto255.Ristretto255OPRF;
 
 /**
  * Abstract base class for NOPAQUE Ristretto255-SHA512 suite, including
@@ -18,7 +18,7 @@ import de.bitplumber.crypto.oprf.ristretto255.Ristretto255Oprf;
  * and server
  */
 public abstract class AbstractRistretto255 {
-	protected static final Ristretto255Oprf oprf = new Ristretto255Oprf();
+	protected static final Ristretto255OPRF oprf = new Ristretto255OPRF();
 
 	protected static final int N_SEED = 32; // Seed size
 	protected static final int N_N = 32;    // Nonce size

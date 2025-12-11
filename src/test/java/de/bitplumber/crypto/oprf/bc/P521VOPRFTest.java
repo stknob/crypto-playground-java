@@ -10,7 +10,7 @@ package de.bitplumber.crypto.oprf.bc;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-class P521VoprfTest extends GenericOprfTestBase {
+class P521VOPRFTest extends GenericOPRFTestBase {
 	private static final RFC9497VoprfTestVector[] VOPRF_TEST_VECTORS = new RFC9497VoprfTestVector[]{
 		//
 		new RFC9497VoprfTestVector(
@@ -44,7 +44,7 @@ class P521VoprfTest extends GenericOprfTestBase {
 
 	@Test
 	void testVoprfTestVectors() { //NOSONAR
-		final var voprf = ECCurveVoprf.createP521();
+		final var voprf = BcVOPRF.createP521();
 		runTestVectors(voprf, VOPRF_TEST_VECTORS);
 	}
 }

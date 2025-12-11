@@ -437,7 +437,7 @@ public class ECCurveHasherTest {
 	 * @param htc
 	 * @param vectors
 	 */
-	private void runRFC9830Vectors(ECCurveHasher htc, RFC9830TestVector[] vectors) {
+	private void runRFC9830Vectors(BcCurveHasher htc, RFC9830TestVector[] vectors) {
 		for (int tidx = 0; tidx < vectors.length; tidx++) {
 			final var vector = vectors[tidx];
 			final var mode = StringUtils.substring(vector.DST(), -4);
@@ -479,49 +479,49 @@ public class ECCurveHasherTest {
 
 	@Test
 	void testP256HashToCurveRFC9830() {
-		final var htc = ECCurveHasher.createP256();
+		final var htc = BcCurveHasher.createP256();
 		runRFC9830Vectors(htc, P256HashToCurveTestVectors);
 	}
 
 	@Test
 	void testP256EncodeToCurveRFC9830() {
-		final var htc = ECCurveHasher.createP256();
+		final var htc = BcCurveHasher.createP256();
 		runRFC9830Vectors(htc, P256EncodeToCurveTestVectors);
 	}
 
 	@Test
 	void testP384HashToCurveRFC9830() {
-		final var htc = ECCurveHasher.createP384();
+		final var htc = BcCurveHasher.createP384();
 		runRFC9830Vectors(htc, P384HashToCurveTestVectors);
 	}
 
 	@Test
 	void testP384EncodeToCurveRFC9830() {
-		final var htc = ECCurveHasher.createP384();
+		final var htc = BcCurveHasher.createP384();
 		runRFC9830Vectors(htc, P384EncodeToCurveTestVectors);
 	}
 
 	@Test
 	void testP521HashToCurveRFC9830() {
-		final var htc = ECCurveHasher.createP521();
+		final var htc = BcCurveHasher.createP521();
 		runRFC9830Vectors(htc, P521HashToCurveTestVectors);
 	}
 
 	@Test
 	void testP521EncodeToCurveRFC9830() {
-		final var htc = ECCurveHasher.createP521();
+		final var htc = BcCurveHasher.createP521();
 		runRFC9830Vectors(htc, P521EncodeToCurveTestVectors);
 	}
 
 	@Test
 	void testSecp256k1HashToCurveRFC9830() {
-		final var htc = ECCurveHasher.createSecp256k1();
+		final var htc = BcCurveHasher.createSecp256k1();
 		runRFC9830Vectors(htc, Secp256k1HashToCurveTestVectors);
 	}
 
 	@Test
 	void testSecp256k1EncodeToCurveRFC9830() {
-		final var htc = ECCurveHasher.createSecp256k1();
+		final var htc = BcCurveHasher.createSecp256k1();
 		runRFC9830Vectors(htc, Secp256k1EncodeToCurveTestVectors);
 	}
 }

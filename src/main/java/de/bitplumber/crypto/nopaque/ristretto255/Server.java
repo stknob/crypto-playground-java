@@ -10,7 +10,7 @@ import org.bouncycastle.util.Bytes;
 
 import de.bitplumber.crypto.nopaque.CredentialIdentifier;
 import de.bitplumber.crypto.nopaque.Labels;
-import de.bitplumber.crypto.oprf.KeyPair;
+import de.bitplumber.crypto.oprf.OPRFKeyPair;
 
 /**
  * Server implementation of NOPAQUE-Ristretto255-SHA512
@@ -90,7 +90,7 @@ public class Server extends AbstractRistretto255 {
 	 * Server - Generate a random keypair
 	 * @return
 	 */
-	public KeyPair randomKeyPair() {
+	public OPRFKeyPair randomKeyPair() {
 		return oprf.randomKeyPair();
 	}
 
@@ -140,7 +140,7 @@ public class Server extends AbstractRistretto255 {
 	 * @return <code>RecoverResponse</code> to be sent to the client to finish the recover process
 	 * @throws Exception
 	 */
-	public RecoverResponse createRecoverResponse(KeyPair serverKeypair, RegistrationRecord regRecord, CredentialIdentifier credentialIdentifier, byte[] oprfSeed, RecoverRequest ke1) throws Exception {
+	public RecoverResponse createRecoverResponse(OPRFKeyPair serverKeypair, RegistrationRecord regRecord, CredentialIdentifier credentialIdentifier, byte[] oprfSeed, RecoverRequest ke1) throws Exception {
 		final var seed = expand(oprfSeed, Arrays.concatenate(credentialIdentifier.toByteArray(), Labels.OPRF_KEY), N_OK);
 		final var oprfKey = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveKeypairLabel(), Labels.NOPAQUE_DERIVE_KEYPAIR)).secretKey();
 

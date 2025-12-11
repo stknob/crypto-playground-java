@@ -25,10 +25,10 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
 
-import de.bitplumber.crypto.h2c.ECCurveHasher;
+import de.bitplumber.crypto.h2c.BcCurveHasher;
 import de.bitplumber.crypto.oprf.*;
 
-class ECCurveSuite {
+class BcOPRFSuite {
 	private static final byte[] EMPTY_ARRAY = new byte[]{};
 
 	private final ECNamedCurveParameterSpec curveSpec;
@@ -39,12 +39,12 @@ class ECCurveSuite {
 
 	private final String name;
 
-	private final ECCurveHasher h2c;
+	private final BcCurveHasher h2c;
 	private final ExtendedDigest hash;
 	private final int elementSize;
 	private final int scalarSize;
 
-	private ECCurveSuite(final String name, final String curveName, final ExtendedDigest hash, final ECCurveHasher h2c, final int k) {
+	private BcOPRFSuite(final String name, final String curveName, final ExtendedDigest hash, final BcCurveHasher h2c, final int k) {
 		this.curveSpec = ECNamedCurveTable.getParameterSpec(curveName);
 		this.curve = curveSpec.getCurve();
 		this.Fn = ECScalarField.fromCurve(curve);
@@ -85,39 +85,39 @@ class ECCurveSuite {
 		return this.Fn;
 	}
 
-	public static ECCurveSuite createP256() {
-		return new ECCurveSuite(
+	public static BcOPRFSuite createP256() {
+		return new BcOPRFSuite(
 			"P256-SHA256",
 			"secp256r1",
 			new SHA256Digest(),
-			ECCurveHasher.createP256(),
+			BcCurveHasher.createP256(),
 			128);
 	}
 
-	public static ECCurveSuite createP384() {
-		return new ECCurveSuite(
+	public static BcOPRFSuite createP384() {
+		return new BcOPRFSuite(
 			"P384-SHA384",
 			"secp384r1",
 			new SHA384Digest(),
-			ECCurveHasher.createP384(),
+			BcCurveHasher.createP384(),
 			192);
 	}
 
-	public static ECCurveSuite createP521() {
-		return new ECCurveSuite(
+	public static BcOPRFSuite createP521() {
+		return new BcOPRFSuite(
 			"P521-SHA512",
 			"secp521r1",
 			new SHA512Digest(),
-			ECCurveHasher.createP521(),
+			BcCurveHasher.createP521(),
 			256);
 	}
 
-	public static ECCurveSuite createSecp256k1() {
-		return new ECCurveSuite(
+	public static BcOPRFSuite createSecp256k1() {
+		return new BcOPRFSuite(
 			"secp256k1-SHA256",
 			"secp256k1",
 			new SHA256Digest(),
-			ECCurveHasher.createSecp256k1(),
+			BcCurveHasher.createSecp256k1(),
 			128);
 	}
 
@@ -323,13 +323,13 @@ class ECCurveSuite {
 		return new ECScalar(h2c.hashToScalar(msg, dst));
 	}
 
-	public KeyPair randomKeyPair() {
+	public OPRFKeyPair randomKeyPair() {
 		final var secretScalar  = randomScalar();
 		final var publicElement = curveSpec.getG().multiply(secretScalar.toBigInteger());
-		return new KeyPair(encodeScalar(secretScalar), encodeElement(publicElement));
+		return new OPRFKeyPair(encodeScalar(secretScalar), encodeElement(publicElement));
 	}
 
-	public KeyPair deriveKeyPair(byte[] seed, byte[] info, byte[] context) throws Exception {
+	public OPRFKeyPair deriveKeyPair(byte[] seed, byte[] info, byte[] context) throws Exception {
 		final var nullSafeInfo = Objects.requireNonNullElse(info, EMPTY_ARRAY);
 		final var deriveInput = Arrays.concatenate(seed, I2OSP(nullSafeInfo.length, 2), nullSafeInfo);
 		final var deriveDST = Arrays.concatenate(Labels.DERIVE_KEYPAIR, context);
@@ -343,11 +343,11 @@ class ECCurveSuite {
 		}
 
 		final var publicElement = curveSpec.getG().multiply(secretScalar.toBigInteger());
-		return new KeyPair(encodeScalar(secretScalar), encodeElement(publicElement));
+		return new OPRFKeyPair(encodeScalar(secretScalar), encodeElement(publicElement));
 	}
 
 	public static final record Proof(byte[] c, byte[] s){
-		public static Proof fromBytes(ECCurveSuite suite, byte[] input) {
+		public static Proof fromBytes(BcOPRFSuite suite, byte[] input) {
 			final var scalarSize = suite.getScalarSize();
 			final var c = Arrays.copyOfRange(input, 0, scalarSize);
 			final var s = Arrays.copyOfRange(input, scalarSize, input.length);

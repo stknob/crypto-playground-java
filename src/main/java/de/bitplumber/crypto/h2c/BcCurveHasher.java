@@ -1,10 +1,10 @@
 /**
  * RFC 9380 Hash-to-Curve implementation for Bouncy-Castle EC
  *
+ * Copyright (c) 2025 Stefan Knoblich <stkn@bitplumber.de>
+ *
  * Includes code ported from Paul Miller's noble-curves (see comments):
  *    noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com)
- *
- * Copyright (c) 2025 Stefan Knoblich <stkn@bitplumber.de>
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,7 +27,7 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
 
-public class ECCurveHasher {
+public class BcCurveHasher {
     private final ECNamedCurveParameterSpec curveSpec;
     private final ECCurve curve;
 	private final ECCurve isogenyCurve;
@@ -55,7 +55,7 @@ public class ECCurveHasher {
 	 * @param m
 	 * @param k
 	 */
-	protected ECCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final ECCurve isogenyCurve,
+	protected BcCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST, final ECCurve isogenyCurve,
 		final int Z, final int m, final int k)
 	{
 		// Curve and parameters
@@ -91,7 +91,7 @@ public class ECCurveHasher {
 	 * @param m
 	 * @param k
 	 */
-	protected ECCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST,
+	protected BcCurveHasher(final String curveName, final ExtendedDigest hash, final String hashToCurveDST, final String encodeToCurveDST,
 		final int Z, final int m, final int k)
 	{
 		this(curveName, hash, hashToCurveDST, encodeToCurveDST, null, Z, m, k);
@@ -101,8 +101,8 @@ public class ECCurveHasher {
 	 * Create a hasher instance for the P256-SHA256 suite
 	 * @return
 	 */
-	public static ECCurveHasher createP256() {
-		return new ECCurveHasher(
+	public static BcCurveHasher createP256() {
+		return new BcCurveHasher(
 			"secp256r1",
 			new SHA256Digest(),
 			"P256_XMD:SHA-256_SSWU_RO_",
@@ -117,8 +117,8 @@ public class ECCurveHasher {
 	 * Create a hasher instance for the P384-SHA384 suite
 	 * @return
 	 */
-	public static ECCurveHasher createP384() {
-		return new ECCurveHasher(
+	public static BcCurveHasher createP384() {
+		return new BcCurveHasher(
 			"secp384r1",
 			new SHA384Digest(),
 			"P384_XMD:SHA-384_SSWU_RO_",
@@ -133,8 +133,8 @@ public class ECCurveHasher {
 	 * Create a hasher instance for the P521-SHA512 suite
 	 * @return
 	 */
-	public static ECCurveHasher createP521() {
-		return new ECCurveHasher(
+	public static BcCurveHasher createP521() {
+		return new BcCurveHasher(
 			"secp521r1",
 			new SHA512Digest(),
 			"P521_XMD:SHA-512_SSWU_RO_",
@@ -150,8 +150,8 @@ public class ECCurveHasher {
 	 * Missing secp256k1 isogeny parameters taken from https://github.com/armfazh/hash-to-curve-ref/
 	 * @return
 	 */
-	public static ECCurveHasher createSecp256k1() {
-		return new ECCurveHasher(
+	public static BcCurveHasher createSecp256k1() {
+		return new BcCurveHasher(
 			"secp256k1",
 			new SHA256Digest(),
 			"secp256k1_XMD:SHA-256_SSWU_RO_",
@@ -408,9 +408,9 @@ public class ECCurveHasher {
 	 */
 	protected byte[] expandMessage(ExtendedDigest hashOrXof, byte[] msg, byte[] dst, int lengthInBytes, int k) {
 		if (hashOrXof instanceof Xof xof) {
-			return ExpandMessage.expandMessageXOF(xof, msg, dst, lengthInBytes, k);
+			return BcExpandMessage.expandMessageXOF(xof, msg, dst, lengthInBytes, k);
 		} else {
-			return ExpandMessage.expandMessageXMD(hashOrXof, msg, dst, lengthInBytes);
+			return BcExpandMessage.expandMessageXMD(hashOrXof, msg, dst, lengthInBytes);
 		}
 	}
 
@@ -548,9 +548,9 @@ public class ECCurveHasher {
 	 */
 	public byte[] expandMessage(byte[] msg, byte[] dst, int lengthInBytes) {
 		if (hash instanceof Xof xof) {
-			return ExpandMessage.expandMessageXOF(xof, msg, dst, lengthInBytes, k);
+			return BcExpandMessage.expandMessageXOF(xof, msg, dst, lengthInBytes, k);
 		} else {
-			return ExpandMessage.expandMessageXMD(hash, msg, dst, lengthInBytes);
+			return BcExpandMessage.expandMessageXMD(hash, msg, dst, lengthInBytes);
 		}
 	}
 

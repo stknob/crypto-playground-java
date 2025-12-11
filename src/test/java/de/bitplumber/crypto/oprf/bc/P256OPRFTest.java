@@ -10,7 +10,7 @@ package de.bitplumber.crypto.oprf.bc;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-class P256OprfTest extends GenericOprfTestBase {
+class P256OPRFTest extends GenericOPRFTestBase {
 	private static final RFC9497OprfTestVector[] OPRF_TEST_VECTORS = new RFC9497OprfTestVector[]{
 		// RFC 9497 - P256-SHA256 - OPRF - Test Vector 1, Batch Size 1
 		new RFC9497OprfTestVector(
@@ -38,13 +38,13 @@ class P256OprfTest extends GenericOprfTestBase {
 
 	@Test
 	void testOprfTestVectors() { //NOSONAR
-		final var oprf = ECCurveOprf.createP256();
+		final var oprf = BcOPRF.createP256();
 		runTestVectors(oprf, OPRF_TEST_VECTORS);
 	}
 
 	@Test
 	void testOprfRandomized() { //NOSONAR
-		final var oprf = ECCurveOprf.createP256();
+		final var oprf = BcOPRF.createP256();
 		runRandomizedRountrip(oprf);
 	}
 }

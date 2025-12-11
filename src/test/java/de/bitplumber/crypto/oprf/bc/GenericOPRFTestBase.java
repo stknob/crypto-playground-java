@@ -17,11 +17,11 @@ import org.bouncycastle.crypto.Xof;
 import org.bouncycastle.crypto.digests.CSHAKEDigest;
 import org.bouncycastle.util.encoders.Hex;
 
-abstract class GenericOprfTestBase {
+abstract class GenericOPRFTestBase {
 	protected static final record RFC9497OprfTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] output) {}
 
-	protected void runTestVectors(ECCurveOprf oprf, RFC9497OprfTestVector[] vectors) {
+	protected void runTestVectors(BcOPRF oprf, RFC9497OprfTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			// assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secretKey");
@@ -47,7 +47,7 @@ abstract class GenericOprfTestBase {
 	protected static final record RFC9497PoprfTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] info, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
 
-	protected void runTestVectors(ECCurvePoprf poprf, RFC9497PoprfTestVector[] vectors) {
+	protected void runTestVectors(BcPOPRF poprf, RFC9497PoprfTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> poprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
@@ -72,7 +72,7 @@ abstract class GenericOprfTestBase {
 	protected static final record RFC9497VoprfTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
 
-	protected void runTestVectors(ECCurveVoprf voprf, RFC9497VoprfTestVector[] vectors) {
+	protected void runTestVectors(BcVOPRF voprf, RFC9497VoprfTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> voprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
@@ -108,7 +108,7 @@ abstract class GenericOprfTestBase {
 
 	protected static final int DEFAULT_RANDOM_ROUNDS = 100;
 
-	protected void runRandomizedRountrip(ECCurveOprf oprf, Integer rounds) {
+	protected void runRandomizedRountrip(BcOPRF oprf, Integer rounds) {
 		final var numRounds = Objects.requireNonNullElse(rounds, DEFAULT_RANDOM_ROUNDS).intValue();
 		final var seed = Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3");
 		final var keyInfo = Hex.decode("74657374206b6579");
@@ -129,12 +129,12 @@ abstract class GenericOprfTestBase {
 		}
 	}
 
-	protected void runRandomizedRountrip(ECCurveOprf oprf) {
+	protected void runRandomizedRountrip(BcOPRF oprf) {
 		runRandomizedRountrip(oprf, null);
 	}
 
 
-	protected void runRandomizedRountrip(ECCurvePoprf poprf, Integer rounds) {
+	protected void runRandomizedRountrip(BcPOPRF poprf, Integer rounds) {
 		final var numRounds = Objects.requireNonNullElse(rounds, DEFAULT_RANDOM_ROUNDS).intValue();
 		final var seed = Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3");
 		final var info = Hex.decode("7465737420696e666f");
@@ -156,12 +156,12 @@ abstract class GenericOprfTestBase {
 		}
 	}
 
-	protected void runRandomizedRountrip(ECCurvePoprf poprf) {
+	protected void runRandomizedRountrip(BcPOPRF poprf) {
 		runRandomizedRountrip(poprf, null);
 	}
 
 
-	protected void runRandomizedRountrip(ECCurveVoprf voprf, Integer rounds) {
+	protected void runRandomizedRountrip(BcVOPRF voprf, Integer rounds) {
 		final var numRounds = Objects.requireNonNullElse(rounds, DEFAULT_RANDOM_ROUNDS).intValue();
 		final var seed = Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3");
 		final var keyInfo = Hex.decode("74657374206b6579");
@@ -182,7 +182,7 @@ abstract class GenericOprfTestBase {
 		}
 	}
 
-	protected void runRandomizedRountrip(ECCurveVoprf voprf) {
+	protected void runRandomizedRountrip(BcVOPRF voprf) {
 		runRandomizedRountrip(voprf, null);
 	}
 }

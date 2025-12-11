@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-class Ristretto255OprfTest {
+class Ristretto255OPRFTest {
 	private static final record RFC9497TestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] output) {}
 
@@ -44,7 +44,7 @@ class Ristretto255OprfTest {
 
 	@Test
 	void testRFC9497TestVectors() {
-		final var oprf = new Ristretto255Oprf();
+		final var oprf = new Ristretto255OPRF();
 
 		for (final var vector : OPRF_TEST_VECTORS) {
 			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
