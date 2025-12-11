@@ -5,7 +5,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-package de.bitplumber.crypto.oprf;
+package de.bitplumber.crypto.oprf.bc;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;

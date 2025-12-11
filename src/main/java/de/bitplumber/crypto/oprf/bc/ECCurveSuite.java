@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-package de.bitplumber.crypto.oprf;
+package de.bitplumber.crypto.oprf.bc;
 
 import java.math.BigInteger;
 import java.util.Objects;
@@ -26,6 +26,7 @@ import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
 
 import de.bitplumber.crypto.h2c.ECCurveHasher;
+import de.bitplumber.crypto.oprf.*;
 
 class ECCurveSuite {
 	private static final byte[] EMPTY_ARRAY = new byte[]{};
@@ -33,6 +34,7 @@ class ECCurveSuite {
 	private final ECNamedCurveParameterSpec curveSpec;
 	private final ECCurve curve;
 	private final ECScalarField Fn;
+	@SuppressWarnings("unused")
 	private final int k;
 
 	private final String name;

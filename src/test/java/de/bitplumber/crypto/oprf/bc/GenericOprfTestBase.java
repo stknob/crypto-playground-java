@@ -5,7 +5,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-package de.bitplumber.crypto.oprf;
+package de.bitplumber.crypto.oprf.bc;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;

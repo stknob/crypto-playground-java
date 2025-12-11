@@ -7,6 +7,13 @@
  */
 package de.bitplumber.crypto.oprf;
 
+/**
+ * @param S Scalar type
+ * @param E Field Element (= Point) type
+ * @param BR Blind result type
+ * @param BER BlindEvaluate result type
+ * @param P Proof type
+ */
 public interface Poprf<S, E, BR, BER, P> {
 	public KeyPair deriveKeyPair(byte[] seed, byte[] info) throws Exception;
 	public KeyPair randomKeyPair();

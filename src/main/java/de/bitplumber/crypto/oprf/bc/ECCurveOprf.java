@@ -5,7 +5,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-package de.bitplumber.crypto.oprf;
+package de.bitplumber.crypto.oprf.bc;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -13,7 +13,8 @@ import java.util.Objects;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 
-import de.bitplumber.crypto.oprf.ECCurveSuite.ECScalar;
+import de.bitplumber.crypto.oprf.bc.ECCurveSuite.ECScalar;
+import de.bitplumber.crypto.oprf.*;
 
 public class ECCurveOprf implements Oprf<ECScalar, ECPoint, ECCurveOprf.BlindResult> {
 	public static record BlindResult(ECScalar blind, ECPoint blindedElement) {}
