@@ -1,3 +1,10 @@
+/**
+ * RFC 9380 Hash-to-Curve implementation for Bouncy-Castle EC
+ *
+ * Copyright (c) 2025 Stefan Knoblich <stkn@bitplumber.de>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 package de.bitplumber.crypto.h2c;
 
 import java.math.BigInteger;

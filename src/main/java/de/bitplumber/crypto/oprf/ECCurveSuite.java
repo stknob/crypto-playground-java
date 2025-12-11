@@ -1,3 +1,13 @@
+/**
+ * RFC 9497 OPRF implementation for Bouncy Castle EC
+ *
+ * Copyright (c) 2025 Stefan Knoblich <stkn@bitplumber.de>
+ *
+ * Includes code ported from Paul Miller's noble-curves (see comments):
+ *    noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com)
+ *
+ * SPDX-License-Identifier: MIT
+ */
 package de.bitplumber.crypto.oprf;
 
 import java.math.BigInteger;
@@ -22,7 +32,7 @@ class ECCurveSuite {
 
 	private final ECNamedCurveParameterSpec curveSpec;
 	private final ECCurve curve;
-	private final ECScalarField Fp;
+	private final ECScalarField Fn;
 	private final int k;
 
 	private final String name;
@@ -35,7 +45,7 @@ class ECCurveSuite {
 	private ECCurveSuite(final String name, final String curveName, final ExtendedDigest hash, final ECCurveHasher h2c, final int k) {
 		this.curveSpec = ECNamedCurveTable.getParameterSpec(curveName);
 		this.curve = curveSpec.getCurve();
-		this.Fp = ECScalarField.fromCurve(curve);
+		this.Fn = ECScalarField.fromCurve(curve);
 		this.name = name;
 		this.hash = hash;
 		this.h2c = h2c;
@@ -69,8 +79,8 @@ class ECCurveSuite {
 		return this.curveSpec.getG();
 	}
 
-	public ECScalarField getFp() {
-		return this.Fp;
+	public ECScalarField getFn() {
+		return this.Fn;
 	}
 
 	public static ECCurveSuite createP256() {
@@ -111,9 +121,9 @@ class ECCurveSuite {
 
 
 	public static class ECScalarField {
-		private final BigInteger q;
-		ECScalarField(BigInteger q) {
-			this.q = q;
+		private final BigInteger n;
+		public ECScalarField(BigInteger n) {
+			this.n = n;
 		}
 
 		public static ECScalarField fromCurve(ECCurve curve) {
@@ -121,11 +131,11 @@ class ECCurveSuite {
 		}
 
 		public BigInteger getOrder() {
-			return this.q;
+			return this.n;
 		}
 
 		public boolean isValid(BigInteger x) {
-			return x.signum() > 0 && q.compareTo(x) > 0;
+			return x.signum() > 0 && n.compareTo(x) > 0;
 		}
 
 		public boolean isValid(ECScalar x) {
@@ -137,29 +147,85 @@ class ECCurveSuite {
 		}
 
 		public ECScalar inverse(ECScalar x) {
-			return new ECScalar(x.toBigInteger().modInverse(this.q));
+			return new ECScalar(x.toBigInteger().modInverse(this.n));
 		}
 
 		public ECScalar add(ECScalar x, ECScalar y) {
-			return new ECScalar(x.toBigInteger().add(y.toBigInteger()).mod(this.q));
+			return new ECScalar(x.toBigInteger().add(y.toBigInteger()).mod(this.n));
 		}
 
 		public ECScalar subtract(ECScalar x, ECScalar y) {
-			return new ECScalar(x.toBigInteger().subtract(y.toBigInteger()).mod(this.q));
+			return new ECScalar(x.toBigInteger().subtract(y.toBigInteger()).mod(this.n));
 		}
 
 		public ECScalar multiply(ECScalar x, ECScalar y) {
-			return new ECScalar(x.toBigInteger().multiply(y.toBigInteger()).mod(this.q));
+			return new ECScalar(x.toBigInteger().multiply(y.toBigInteger()).mod(this.n));
 		}
 
 		public ECScalar divide(ECScalar x, ECScalar y) {
 			return this.multiply(x, this.inverse(y));
 		}
 
-		public ECScalar scalarFromBytesModOrderWide(byte[] uniformBytes) {
-			final var s = BigIntegers.fromUnsignedByteArray(uniformBytes).mod(this.q);
+		/**
+		 * Field size in bytes
+		 * Ported from noble-curves, abstract/modular.ts::getFieldBytesLength()
+		 * @return
+		 */
+		public int getFieldBytesLength() {
+			return Math.ceilDivExact(this.n.bitLength(), 8);
+		}
+
+		/**
+		 * Minimum hash length based using |n| + |n|/2 from noble curves
+		 * Ported from noble-curves, abstract/modular.ts::getMinHashLength()
+		 * @return
+		 */
+		public int getMinHashLength() {
+			final var length = getFieldBytesLength();
+			return length + Math.ceilDivExact(length, 2);
+		}
+
+		/**
+		 * Minimum hash length using |n| + k/2 from RFC 9380
+		 * @param k Security level in bits
+		 * @return
+		 */
+		public int getMinHashLength(final int k) {
+			return Math.ceilDivExact(this.n.bitLength() + k, 8);
+		}
+
+		/**
+		 * Private key generation utility
+		 * Ported from noble-curves, abstract/modular.ts::mapHashToField()
+		 *
+		 * (!) WARNING (!)
+		 * This is not compatible with RFC 9380 (especially hashToScalar) mapping,
+		 * use this only for scalar mapping without user-provided input, e.g. random key generation
+		 *
+		 * | --------------- | - RFC 9380 - | --- this --- |
+		 * | Output Range    | 0 ... N-1    | 1 ... N-1    |
+		 * | MinLength P256  | 48 Bytes     | 48 Bytes     |
+		 * | MinLength P384  | 72 Bytes     | 72 Bytes     |
+		 * | MinLength P521  | 98 Bytes     | 99 Bytes (!) |
+		 *
+		 * @param uniformBytes
+		 * @param isLE Interpret <code>uniformBytes</code> as little-endian
+		 * @return
+		 */
+		public ECScalar mapHashToField(final byte[] uniformBytes, final boolean isLE) {
+			Objects.requireNonNull(uniformBytes, "Mandatory parameter 'uniformBytes' is not set");
+			final var ell = getMinHashLength();
+			if (uniformBytes.length < ell || uniformBytes.length > 1024)
+				throw new IllegalArgumentException(String.format("Expected %d - 1024 bytes, but got %d", ell, uniformBytes.length));
+			final var s = BigIntegers.fromUnsignedByteArray(isLE ? Arrays.reverse(uniformBytes) : uniformBytes)
+				.mod(this.n.subtract(BigInteger.ONE))
+				.add(BigInteger.ONE);
 			if (!this.isValid(s)) throw new IllegalArgumentException("Invalid field element");
 			return new ECScalar(s);
+		}
+
+		public ECScalar mapHashToField(final byte[] uniformBytes) {
+			return mapHashToField(uniformBytes, false);
 		}
 	}
 
@@ -200,7 +266,7 @@ class ECCurveSuite {
 
 	public ECScalar decodeScalar(byte[] encoded) {
 		final var s = BigIntegers.fromUnsignedByteArray(encoded);
-		if (!Fp.isValid(s)) {
+		if (!Fn.isValid(s)) {
 			throw new IllegalArgumentException(String.format("Encoded %s scalar is invalid",
 				curveSpec.getName()));
 		}
@@ -225,21 +291,24 @@ class ECCurveSuite {
 		return p;
 	}
 
-	private ECScalar scalarFromBytesModOrderWide(byte[] uniformBytes) {
-		Objects.requireNonNull(uniformBytes, "Mandatory parameter 'uniformBytes' is not set");
-		final var ell = Math.ceilDiv(curve.getFieldSize() + k, 8);
-		if (uniformBytes.length < ell) throw new IllegalArgumentException(String.format("%d", ell));
-		return Fp.scalarFromBytesModOrderWide(uniformBytes);
+	/**
+	 * Helper method for unit tests
+	 * @param scalarBytes
+	 * @return Bytes to be used as input for `ECScalar::mapHashToField()`
+	 */
+	public byte[] mockRandomScalarBytes(byte[] scalarBytes) {
+		final var s = BigIntegers.fromUnsignedByteArray(scalarBytes).subtract(BigInteger.ONE);
+		return BigIntegers.asUnsignedByteArray(Fn.getMinHashLength(), s);
 	}
 
 	public ECScalar randomScalar() {
-		final var ell = Math.ceilDiv(curve.getFieldSize() + k, 8);
+		final var ell = Fn.getMinHashLength();
 		final var uniformBytes = RandomUtils.secureStrong().randomBytes(ell);
-		return scalarFromBytesModOrderWide(uniformBytes);
+		return Fn.mapHashToField(uniformBytes);
 	}
 
 	public ECScalar invertScalar(ECScalar x) {
-		return Fp.inverse(x);
+		return Fn.inverse(x);
 	}
 
 	protected ECPoint hashToGroup(byte[] msg, byte[] customDST, byte[] context) {
@@ -248,10 +317,8 @@ class ECCurveSuite {
 	}
 
 	protected ECScalar hashToScalar(byte[] msg, byte[] customDST, byte[] context) {
-		final var ell = Math.ceilDiv(curve.getFieldSize() + k, 8);
 		final var dst = Objects.requireNonNullElseGet(customDST, () -> Arrays.concatenate(Labels.HASH_TO_SCALAR, context));
-		final var s = h2c.expandMessage(msg, dst, ell);
-		return scalarFromBytesModOrderWide(s);
+		return new ECScalar(h2c.hashToScalar(msg, dst));
 	}
 
 	public KeyPair randomKeyPair() {
@@ -267,7 +334,7 @@ class ECCurveSuite {
 
 		int counter = 0;
 		ECScalar secretScalar = new ECScalar(BigInteger.ZERO);
-		while (Fp.isZero(secretScalar)) {
+		while (Fn.isZero(secretScalar)) {
 			if (counter > 255) throw new Exception("Failed to derive secret key");
 			secretScalar = hashToScalar(Arrays.concatenate(deriveInput, I2OSP(counter, 1)), deriveDST, context);
 			counter++;
@@ -379,7 +446,7 @@ class ECCurveSuite {
 		});
 
 		final var c = hashToScalar(challengeTranscript, null, context);
-		final var s = Fp.subtract(r, Fp.multiply(c, k));
+		final var s = Fn.subtract(r, Fn.multiply(c, k));
 		return new Proof(encodeScalar(c), encodeScalar(s));
 	}
 

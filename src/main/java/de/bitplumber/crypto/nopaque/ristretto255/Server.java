@@ -11,7 +11,6 @@ import org.bouncycastle.util.Bytes;
 import de.bitplumber.crypto.nopaque.CredentialIdentifier;
 import de.bitplumber.crypto.nopaque.Labels;
 import de.bitplumber.crypto.oprf.KeyPair;
-import de.bitplumber.crypto.oprf.Oprf;
 
 /**
  * Server implementation of NOPAQUE-Ristretto255-SHA512
@@ -106,10 +105,10 @@ public class Server extends AbstractRistretto255 {
 	 */
 	public RegistrationResponse createRegistrationResponse(RegistrationRequest regRequest, byte[] serverPublicKey, CredentialIdentifier credentialIdentifier, byte[] oprfSeed) throws Exception {
 		final var seed = expand(oprfSeed, Arrays.concatenate(credentialIdentifier.toByteArray(), Labels.OPRF_KEY), N_OK);
-		final var serverKeypair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveKeypairLabel(), Labels.NOPAQUE_DERIVE_KEYPAIR));
+		final var serverKeyPair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveKeypairLabel(), Labels.NOPAQUE_DERIVE_KEYPAIR));
 
 		final var blindedElement = oprf.decodeElement(regRequest.blindedElement());
-		final var evaluatedElement = oprf.blindEvaluate(serverKeypair.secretKey(), blindedElement);
+		final var evaluatedElement = oprf.blindEvaluate(serverKeyPair.secretKey(), blindedElement);
 		final var evaluatedMessage = oprf.encodeElement(evaluatedElement);
 		return new RegistrationResponse(evaluatedMessage, serverPublicKey);
 	}

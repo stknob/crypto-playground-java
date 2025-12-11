@@ -1,3 +1,10 @@
+/**
+ * RFC 9497 OPRF implementation for Bouncy Castle EC
+ *
+ * Copyright (c) 2025 Stefan Knoblich <stkn@bitplumber.de>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 package de.bitplumber.crypto.oprf;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -17,7 +24,10 @@ abstract class GenericOprfTestBase {
 	protected void runTestVectors(ECCurveOprf oprf, RFC9497OprfTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
-			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secretKey");
+			// assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secretKey");
+			assertArrayEquals(vector.secretKey(), keypair.secretKey(), String.format("secretKey does not match, expected: '%s', got: '%s'",
+				Hex.toHexString(vector.secretKey()), Hex.toHexString(keypair.secretKey())
+			));
 
 			final var blindResult = assertDoesNotThrow(() -> oprf.blind(vector.input(), vector.blind()));
 			assertArrayEquals(vector.blindedElement(), oprf.encodeElement(blindResult.blindedElement()), "blindedElement");

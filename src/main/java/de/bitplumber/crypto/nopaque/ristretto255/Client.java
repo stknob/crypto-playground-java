@@ -22,6 +22,11 @@ public class Client extends AbstractRistretto255 {
 	private final Stretcher stretch;
 	private ClientState state = null;
 
+	public Client() {
+		this.params = new ClientParameter();
+		this.stretch = Stretcher.IDENTITY;
+	}
+
 	public Client(Stretcher stretch) {
 		this.params = new ClientParameter();
 		this.stretch = stretch;
@@ -113,7 +118,7 @@ public class Client extends AbstractRistretto255 {
 	}
 
 	private StoreResult store(byte[] randomizedPassword, byte[] serverPublicKey, byte[] serverIdentity, byte[] clientIdentity) throws Exception {
-		final var envelopeNonce = ObjectUtils.defaultIfNull(params.envelopeNonce(), RandomUtils.secureStrong().randomBytes(N_SEED));
+		final var envelopeNonce = ObjectUtils.defaultIfNull(params.envelopeNonce(), RandomUtils.secureStrong().randomBytes(N_N));
 		final var maskingKey = expand(randomizedPassword, Labels.MASKING_KEY, N_H);
 		final var exportKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.EXPORT_KEY), N_H);
 		final var authKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.AUTH_KEY), N_H);
@@ -135,8 +140,8 @@ public class Client extends AbstractRistretto255 {
 	}
 
 	private RecoverResult recover(byte[] randomizedPassword, byte[] serverPublicKey, byte[] envelope, byte[] serverIdentity, byte[] clientIdentity) throws Exception {
-		final var envelopeNonce = Arrays.copyOfRange(envelope, 0, N_PK);
-		final var expectedAuthTag = Arrays.copyOfRange(envelope, N_PK, envelope.length);
+		final var envelopeNonce = Arrays.copyOfRange(envelope, 0, N_N);
+		final var authTag = Arrays.copyOfRange(envelope, N_N, envelope.length);
 
 		final var exportKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.EXPORT_KEY), N_H);
 		final var authKey = expand(randomizedPassword, Arrays.concatenate(envelopeNonce, Labels.AUTH_KEY), N_H);
@@ -145,7 +150,7 @@ public class Client extends AbstractRistretto255 {
 		final var clientKeypair = oprf.deriveKeyPair(seed, ObjectUtils.defaultIfNull(params.customDeriveDhKeypairLabel(), Labels.NOPAQUE_DERIVE_DH_KEYPAIR));
 		final var cleartextCredentials = createCleartextCredentials(serverPublicKey, clientKeypair.publicKey(), serverIdentity, clientIdentity);
 
-		final var authTag = hmac(authKey, Arrays.concatenate(new byte[][]{
+		final var expectedAuthTag = hmac(authKey, Arrays.concatenate(new byte[][]{
 			envelopeNonce,
 			serverPublicKey,
 			I2OSP(cleartextCredentials.serverIdentity().length, 2),

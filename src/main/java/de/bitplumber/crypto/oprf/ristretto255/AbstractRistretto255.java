@@ -1,3 +1,10 @@
+/**
+ * RFC 9497 OPRF implementation for Ristretto255
+ *
+ * Copyright (c) 2025 Stefan Knoblich <stkn@bitplumber.de>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 package de.bitplumber.crypto.oprf.ristretto255;
 
 import java.math.BigInteger;

@@ -1,3 +1,10 @@
+/**
+ * RFC 9380 Hash-to-Curve implementation for Bouncy Castle EC
+ *
+ * Copyright (c) 2025 Stefan Knoblich <stkn@bitplumber.de>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 package de.bitplumber.crypto.h2c;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -440,9 +447,9 @@ public class ECCurveHasherTest {
 			// First check hashToField implementation used by either modes internally
 			if (vector.DST().contains("secp256k1")) {
 				// Not supported for secp256k1, throws exception
-				assertThrows(UnsupportedOperationException.class, () -> htc.hashToField(msg, DST, vector.u().length));
+				assertThrows(UnsupportedOperationException.class, () -> htc.hashToFieldElement(msg, DST, vector.u().length));
 			} else {
-				final var u = assertDoesNotThrow(() -> htc.hashToField(msg, DST, vector.u().length));
+				final var u = assertDoesNotThrow(() -> htc.hashToFieldElement(msg, DST, vector.u().length));
 				for (int i = 0; i < u.length; i++) {
 					final int idx = i;
 					assertArrayEquals(u[i][0].getEncoded(), vector.u()[i], () -> String.format("%s-%s u[%d] is invalid", htc.getCurveName(), mode, idx));

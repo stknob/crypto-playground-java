@@ -1,3 +1,10 @@
+/**
+ * RFC 9497 OPRF implementation for Bouncy Castle EC
+ *
+ * Copyright (c) 2025 Stefan Knoblich <stkn@bitplumber.de>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 package de.bitplumber.crypto.oprf;
 
 import java.nio.charset.StandardCharsets;
@@ -106,11 +113,11 @@ public class ECCurvePoprf implements Poprf<ECScalar, ECPoint, ECCurvePoprf.Blind
 		final var skS = suite.decodeScalar(serverSecretKey);
 		final var framedInfo = Arrays.concatenate(Labels.INFO, suite.I2OSP(info.length, 2), info);
 		final var m = suite.hashToScalar(framedInfo, null, context);
-		final var t = suite.getFp().add(skS, m);
-		if (!suite.getFp().isValid(t))
+		final var t = suite.getFn().add(skS, m);
+		if (!suite.getFn().isValid(t))
 			throw new IllegalArgumentException("InverseError");
 
-		final var evaluatedElement = blindedElement.multiply(suite.getFp().inverse(t).toBigInteger());
+		final var evaluatedElement = blindedElement.multiply(suite.getFn().inverse(t).toBigInteger());
 		final var tweakedKey = suite.getG().multiply(t.toBigInteger());
 		final var blindedElements  = new ECPoint[]{ blindedElement };
 		final var evaluatedElements = new ECPoint[]{ evaluatedElement };
@@ -152,8 +159,8 @@ public class ECCurvePoprf implements Poprf<ECScalar, ECPoint, ECCurvePoprf.Blind
 		final var skS = suite.decodeScalar(serverSecretKey);
 		final var framedInfo = Arrays.concatenate(Labels.INFO, suite.I2OSP(info.length, 2), info);
 		final var m = suite.hashToScalar(framedInfo, null, context);
-		final var t = suite.getFp().add(skS, m);
-		if (!suite.getFp().isValid(t))
+		final var t = suite.getFn().add(skS, m);
+		if (!suite.getFn().isValid(t))
 			throw new IllegalArgumentException("InverseError");
 
 		final var evaluatedElement = inputElement.multiply(suite.invertScalar(t).toBigInteger());

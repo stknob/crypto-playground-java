@@ -1,3 +1,13 @@
+/**
+ * RFC 9380 Hash-to-Curve implementation for Bouncy-Castle EC
+ *
+ * Includes code ported from Paul Miller's noble-curves (see comments):
+ *    noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com)
+ *
+ * Copyright (c) 2025 Stefan Knoblich <stkn@bitplumber.de>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 package de.bitplumber.crypto.h2c;
 
 import java.math.BigInteger;
@@ -197,7 +207,7 @@ public class ECCurveHasher {
 	}
 
 	/**
-	 *
+	 * Minimum hash length for mapping to the curve, according to the RFC
 	 * @return
 	 */
 	public int getMinHashLength() {
@@ -405,7 +415,8 @@ public class ECCurveHasher {
 	}
 
 	/**
-	 *
+	 * Generic hash to (scalar) field
+	 * @param N Field order
 	 * @param input
 	 * @param DST
 	 * @param m
@@ -413,7 +424,34 @@ public class ECCurveHasher {
 	 * @param count
 	 * @return
 	 */
-	protected ECFieldElement[][] hashToField(ECCurve curve, byte[] input, byte[] dst, int m, int k, int count) {
+	protected BigInteger[][] hashToScalarField(BigInteger N, byte[] input, byte[] dst, int m, int k, int count) {
+		final var L = getMinHashLength();
+		final var lengthInBytes = count * m * L;
+		final var uniformBytes = expandMessage(hash, input, dst, lengthInBytes, k);
+		final var u = new BigInteger[count][];
+		for (int i = 0; i < count; i++) {
+			final var e = new BigInteger[m];
+			for (int j = 0; j < m; j++) {
+				final var elmOffset = L * (j + i * m);
+				final var tv = Arrays.copyOfRange(uniformBytes, elmOffset, elmOffset + L);
+				e[j] = BigIntegers.fromUnsignedByteArray(tv).mod(N);
+			}
+			u[i] = e;
+		}
+		return u;
+	}
+
+	/**
+	 * Hash to curve field element
+	 * @param curve Curve to hash to
+	 * @param input
+	 * @param DST
+	 * @param m
+	 * @param k
+	 * @param count
+	 * @return
+	 */
+	protected ECFieldElement[][] hashToFieldElement(ECCurve curve, byte[] input, byte[] dst, int m, int k, int count) {
 		final var L = getMinHashLength();
 		final var lengthInBytes = count * m * L;
 		final var uniformBytes = expandMessage(hash, input, dst, lengthInBytes, k);
@@ -437,13 +475,13 @@ public class ECCurveHasher {
 	 * @param count
 	 * @return
 	 */
-	protected ECFieldElement[][] hashToField(byte[] input, byte[] dst, int count) {
+	protected ECFieldElement[][] hashToFieldElement(byte[] input, byte[] dst, int count) {
 		Objects.requireNonNull(input, "Parameter 'input' must be non-null");
 		Objects.requireNonNull(dst,   "Parameter 'dst' must be non-null");
 		if (curveSpec.getName().equalsIgnoreCase("secp256k1")) {
 			throw new UnsupportedOperationException("Operation not supported for secp256k1");
 		} else {
-			return hashToField(curve, input, dst, m, k, count);
+			return hashToFieldElement(curve, input, dst, m, k, count);
 		}
 	}
 
@@ -460,11 +498,11 @@ public class ECCurveHasher {
 		final ECPoint q0, q1;	// NOSONAR
 		if (curveSpec.getName().equalsIgnoreCase("secp256k1")) {
 			// AB == 0 special case for secp256k1
-			final var u = hashToField(isogenyCurve, input, htcDST, m, k, 2);
+			final var u = hashToFieldElement(isogenyCurve, input, htcDST, m, k, 2);
 			q0 = isoMap3(mapToCurveSimpleSWU(isogenyCurve, u[0][0]));
 			q1 = isoMap3(mapToCurveSimpleSWU(isogenyCurve, u[1][0]));
 		} else {
-			final var u = hashToField(curve, input, htcDST, m, k, 2);
+			final var u = hashToFieldElement(curve, input, htcDST, m, k, 2);
 			q0 = mapToCurveSimpleSWU(curve, u[0][0]);
 			q1 = mapToCurveSimpleSWU(curve, u[1][0]);
 		}
@@ -490,10 +528,10 @@ public class ECCurveHasher {
 
 		final ECPoint q;
 		if (curveSpec.getName().equalsIgnoreCase("secp256k1")) {
-			final var u = hashToField(isogenyCurve, input, etcDST, m, k, 1);
+			final var u = hashToFieldElement(isogenyCurve, input, etcDST, m, k, 1);
 			q = isoMap3(mapToCurveSimpleSWU(isogenyCurve, u[0][0]));
 		} else {
-			final var u = hashToField(curve, input, etcDST, m, k, 1);
+			final var u = hashToFieldElement(curve, input, etcDST, m, k, 1);
 			q = mapToCurveSimpleSWU(curve, u[0][0]);
 		}
 
@@ -514,5 +552,15 @@ public class ECCurveHasher {
 		} else {
 			return ExpandMessage.expandMessageXMD(hash, msg, dst, lengthInBytes);
 		}
+	}
+
+	/**
+	 *
+	 * @param msg
+	 * @param dst
+	 * @return
+	 */
+	public BigInteger hashToScalar(byte[] msg, byte[] dst) {
+		return hashToScalarField(N, msg, dst, 1, k, 1)[0][0];
 	}
 }

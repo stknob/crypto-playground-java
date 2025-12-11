@@ -21,12 +21,12 @@ public abstract class AbstractRistretto255 {
 	protected static final Ristretto255Oprf oprf = new Ristretto255Oprf();
 
 	protected static final int N_SEED = 32; // Seed size
+	protected static final int N_N = 32;    // Nonce size
 	protected static final int N_OE = 32;   // OPRF element size
 	protected static final int N_OK = 32;   // OPRF secret key size
 	protected static final int N_PK = 32;   // Public key size
 	protected static final int N_SK = 32;   // Secret key size
 	protected static final int N_H = 64;    // Hash output size (SHA512)
-	protected static final int N_N = 32;    // Nonce size
 	protected static final int N_M = 64;    // MAC size
 
 	/**
