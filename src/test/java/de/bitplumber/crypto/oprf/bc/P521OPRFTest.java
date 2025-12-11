@@ -10,10 +10,13 @@ package de.bitplumber.crypto.oprf.bc;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-class P521OPRFTest extends GenericOPRFTestBase{
-	private static final RFC9497OprfTestVector[] OPRF_TEST_VECTORS = new RFC9497OprfTestVector[]{
+class P521OPRFTest extends GenericOPRFTestBase {
+	/**
+	 * OPRF Tests
+	 **/
+	private static final RFC9497OPRFTestVector[] OPRF_TEST_VECTORS = new RFC9497OPRFTestVector[]{
 		// RFC 9497 - P512-SHA512 - OPRF - Test Vector 1, Batch Size 1
-		new RFC9497OprfTestVector(
+		new RFC9497OPRFTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("0153441b8faedb0340439036d6aed06d1217b34c42f17f8db4c5cc610a4a955d698a688831b16d0dc7713a1aa3611ec60703bffc7dc9c84e3ed673b3dbe1d5fccea6"),
@@ -24,7 +27,7 @@ class P521OPRFTest extends GenericOPRFTestBase{
 			Hex.decode("26232de6fff83f812adadadb6cc05d7bbeee5dca043dbb16b03488abb9981d0a1ef4351fad52dbd7e759649af393348f7b9717566c19a6b8856284d69375c809")
 		),
 		// RFC 9497 - P512-SHA512 - OPRF - Test Vector 2, Batch Size 1
-		new RFC9497OprfTestVector(
+		new RFC9497OPRFTestVector(
 			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
 			Hex.decode("74657374206b6579"),
 			Hex.decode("0153441b8faedb0340439036d6aed06d1217b34c42f17f8db4c5cc610a4a955d698a688831b16d0dc7713a1aa3611ec60703bffc7dc9c84e3ed673b3dbe1d5fccea6"),
@@ -37,8 +40,108 @@ class P521OPRFTest extends GenericOPRFTestBase{
 	};
 
 	@Test
-	void testOprfTestVectors() { //NOSONAR
+	void testOPRFTestVectors() { //NOSONAR
 		final var oprf = BcOPRF.createP521();
 		runTestVectors(oprf, OPRF_TEST_VECTORS);
+	}
+
+	@Test
+	void testOPRFRandomized() { //NOSONAR
+		final var oprf = BcOPRF.createP521();
+		runRandomizedRountrip(oprf);
+	}
+
+	/**
+	 * VOPRF Tests
+	 **/
+	private static final RFC9497VOPRFTestVector[] VOPRF_TEST_VECTORS = new RFC9497VOPRFTestVector[]{
+		//
+		new RFC9497VOPRFTestVector(
+			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+			Hex.decode("74657374206b6579"),
+			Hex.decode("015c7fc1b4a0b1390925bae915bd9f3d72009d44d9241b962428aad5d13f22803311e7102632a39addc61ea440810222715c9d2f61f03ea424ec9ab1fe5e31cf9238"),
+			Hex.decode("0301505d646f6e4c9102451eb39730c4ba1c4087618641edbdba4a60896b07fd0c9414ce553cbf25b81dfcca50a8f6724ab7a2bc4d0cf736967a287bb6084cc0678ac0"),
+			Hex.decode("00"),
+			Hex.decode("00d1dccf7a51bafaf75d4a866d53d8cafe4d504650f53df8f16f6861633388936ea23338fa65ec36e0290022b48eb562889d89dbfa691d1cde91517fa222ed7ad364"),
+			Hex.decode("0301d6e4fb545e043ddb6aee5d5ceeee1b44102615ab04430c27dd0f56988dedcb1df32ef384f160e0e76e718605f14f3f582f9357553d153b996795b4b3628a4f6380"),
+			Hex.decode("03013fdeaf887f3d3d283a79e696a54b66ff0edcb559265e204a958acf840e0930cc147e2a6835148d8199eebc26c03e9394c9762a1c991dde40bca0f8ca003eefb045"),
+			Hex.decode("0077fcc8ec6d059d7759b0a61f871e7c1dadc65333502e09a51994328f79e5bda3357b9a4f410a1760a3612c2f8f27cb7cb032951c047cc66da60da583df7b247edd0188e5eb99c71799af1d80d643af16ffa1545acd9e9233fbb370455b10eb257ea12a1667c1b4ee5b0ab7c93d50ae89602006960f083ca9adc4f6276c0ad60440393c"),
+			Hex.decode("015e80ae32363b32cb76ad4b95a5a34e46bb803d955f0e073a04aa5d92b3fb739f56f9db001266677f62c095021db018cd8cbb55941d4073698ce45c405d1348b7b1"),
+			Hex.decode("5e003d9b2fb540b3d4bab5fedd154912246da1ee5e557afd8f56415faa1a0fadff6517da802ee254437e4f60907b4cda146e7ba19e249eef7be405549f62954b")
+		),
+		//
+		new RFC9497VOPRFTestVector(
+			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+			Hex.decode("74657374206b6579"),
+			Hex.decode("015c7fc1b4a0b1390925bae915bd9f3d72009d44d9241b962428aad5d13f22803311e7102632a39addc61ea440810222715c9d2f61f03ea424ec9ab1fe5e31cf9238"),
+			Hex.decode("0301505d646f6e4c9102451eb39730c4ba1c4087618641edbdba4a60896b07fd0c9414ce553cbf25b81dfcca50a8f6724ab7a2bc4d0cf736967a287bb6084cc0678ac0"),
+			Hex.decode("5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a"),
+			Hex.decode("00d1dccf7a51bafaf75d4a866d53d8cafe4d504650f53df8f16f6861633388936ea23338fa65ec36e0290022b48eb562889d89dbfa691d1cde91517fa222ed7ad364"),
+			Hex.decode("03005b05e656cb609ce5ff5faf063bb746d662d67bbd07c062638396f52f0392180cf2365cabb0ece8e19048961d35eeae5d5fa872328dce98df076ee154dd191c615e"),
+			Hex.decode("0301b19fcf482b1fff04754e282292ed736c5f0aa080d4f42663cd3a416c6596f03129e8e096d8671fe5b0d19838312c511d2ce08d431e43e3ef06199d8cab7426238d"),
+			Hex.decode("01ec9fece444caa6a57032e8963df0e945286f88fbdf233fb5101f0924f7ea89c47023f5f72f240e61991fd33a299b5b38c45a5e2dd1a67b072e59dfe86708a359c701e38d383c60cf6969463bcf13251bedad47b7941f52e409a3591398e27924410b18a301c0e19f527cad504fa08388050ac634e1b05c5216d337742f2754e1fc502f"),
+			Hex.decode("015e80ae32363b32cb76ad4b95a5a34e46bb803d955f0e073a04aa5d92b3fb739f56f9db001266677f62c095021db018cd8cbb55941d4073698ce45c405d1348b7b1"),
+			Hex.decode("fa15eebba81ecf40954f7135cb76f69ef22c6bae394d1a4362f9b03066b54b6604d39f2e53369ca6762a3d9787e230e832aa85955af40ecb8deebb009a8cf474")
+		),
+	};
+
+	@Test
+	void testVOPRFTestVectors() { //NOSONAR
+		final var voprf = BcVOPRF.createP521();
+		runTestVectors(voprf, VOPRF_TEST_VECTORS);
+	}
+
+	@Test
+	void testVOPRFRandomized() { //NOSONAR
+		final var voprf = BcVOPRF.createP521();
+		runRandomizedRountrip(voprf);
+	}
+
+	/**
+	 * POPRF Tests
+	 **/
+	private static final RFC9497POPRFTestVector[] POPRF_TEST_VECTORS = new RFC9497POPRFTestVector[]{
+		// P512-SHA512 - POPRF - Test Vector 1, Batch Size 1
+		new RFC9497POPRFTestVector(
+			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+			Hex.decode("74657374206b6579"),
+			Hex.decode("014893130030ce69cf714f536498a02ff6b396888f9bb507985c32928c4427d6d39de10ef509aca4240e8569e3a88debc0d392e3361bcd934cb9bdd59e339dff7b27"),
+			Hex.decode("0301de8ceb9ffe9237b1bba87c320ea0bebcfc3447fe6f278065c6c69886d692d1126b79b6844f829940ace9b52a5e26882cf7cbc9e57503d4cca3cd834584729f812a"),
+			Hex.decode("7465737420696e666f"),
+			Hex.decode("00"),
+			Hex.decode("00d1dccf7a51bafaf75d4a866d53d8cafe4d504650f53df8f16f6861633388936ea23338fa65ec36e0290022b48eb562889d89dbfa691d1cde91517fa222ed7ad364"),
+			Hex.decode("020095cff9d7ecf65bdfee4ea92d6e748d60b02de34ad98094f82e25d33a8bf50138ccc2cc633556f1a97d7ea9438cbb394df612f041c485a515849d5ebb2238f2f0e2"),
+			Hex.decode("0301408e9c5be3ffcc1c16e5ae8f8aa68446223b0804b11962e856af5a6d1c65ebbb5db7278c21db4e8cc06d89a35b6804fb1738a295b691638af77aa1327253f26d01"),
+			Hex.decode("0106a89a61eee9dd2417d2849a8e2167bc5f56e3aed5a3ff23e22511fa1b37a29ed44d1bbfd6907d99cfbc558a56aec709282415a864a281e49dc53792a4a638a0660034306d64be12a94dcea5a6d664cf76681911c8b9a84d49bf12d4893307ec14436bd05f791f82446c0de4be6c582d373627b51886f76c4788256e3da7ec8fa18a86"),
+			Hex.decode("015e80ae32363b32cb76ad4b95a5a34e46bb803d955f0e073a04aa5d92b3fb739f56f9db001266677f62c095021db018cd8cbb55941d4073698ce45c405d1348b7b1"),
+			Hex.decode("808ae5b87662eaaf0b39151dd85991b94c96ef214cb14a68bf5c143954882d330da8953a80eea20788e552bc8bbbfff3100e89f9d6e341197b122c46a208733b")
+		),
+		// P512-SHA512 - POPRF - Test Vector 2, Batch Size 1
+		new RFC9497POPRFTestVector(
+			Hex.decode("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+			Hex.decode("74657374206b6579"),
+			Hex.decode("014893130030ce69cf714f536498a02ff6b396888f9bb507985c32928c4427d6d39de10ef509aca4240e8569e3a88debc0d392e3361bcd934cb9bdd59e339dff7b27"),
+			Hex.decode("0301de8ceb9ffe9237b1bba87c320ea0bebcfc3447fe6f278065c6c69886d692d1126b79b6844f829940ace9b52a5e26882cf7cbc9e57503d4cca3cd834584729f812a"),
+			Hex.decode("7465737420696e666f"),
+			Hex.decode("5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a"),
+			Hex.decode("00d1dccf7a51bafaf75d4a866d53d8cafe4d504650f53df8f16f6861633388936ea23338fa65ec36e0290022b48eb562889d89dbfa691d1cde91517fa222ed7ad364"),
+			Hex.decode("030112ea89cf9cf589496189eafc5f9eb13c9f9e170d6ecde7c5b940541cb1a9c5cfeec908b67efe16b81ca00d0ce216e34b3d5f46a658d3fd8573d671bdb6515ed508"),
+			Hex.decode("0200ebc49df1e6fa61f412e6c391e6f074400ecdd2f56c4a8c03fe0f91d9b551f40d4b5258fd891952e8c9b28003bcfa365122e54a5714c8949d5d202767b31b4bf1f6"),
+			Hex.decode("0082162c71a7765005cae202d4bd14b84dae63c29067e886b82506992bd994a1c3aac0c1c5309222fe1af8287b6443ed6df5c2e0b0991faddd3564c73c7597aecd9a003b1f1e3c65f28e58ab4e767cfb4adbcaf512441645f4c2aed8bf67d132d966006d35fa71a34145414bf3572c1de1a46c266a344dd9e22e7fb1e90ffba1caf556d9"),
+			Hex.decode("015e80ae32363b32cb76ad4b95a5a34e46bb803d955f0e073a04aa5d92b3fb739f56f9db001266677f62c095021db018cd8cbb55941d4073698ce45c405d1348b7b1"),
+			Hex.decode("27032e24b1a52a82ab7f4646f3c5df0f070f499db98b9c5df33972bd5af5762c3638afae7912a6c1acdb1ae2ab2fa670bd5486c645a0e55412e08d33a4a0d6e3")
+		),
+	};
+
+	@Test
+	void testPOPRFTestVectors() { //NOSONAR
+		final var poprf = BcPOPRF.createP521();
+		runTestVectors(poprf, POPRF_TEST_VECTORS);
+	}
+
+	@Test
+	void testPOPRFRandomized() { //NOSONAR
+		final var poprf = BcPOPRF.createP521();
+		runRandomizedRountrip(poprf);
 	}
 }

@@ -18,10 +18,10 @@ import org.bouncycastle.crypto.digests.CSHAKEDigest;
 import org.bouncycastle.util.encoders.Hex;
 
 abstract class GenericOPRFTestBase {
-	protected static final record RFC9497OprfTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
+	protected static final record RFC9497OPRFTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] output) {}
 
-	protected void runTestVectors(BcOPRF oprf, RFC9497OprfTestVector[] vectors) {
+	protected void runTestVectors(BcOPRF oprf, RFC9497OPRFTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> oprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			// assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secretKey");
@@ -44,10 +44,10 @@ abstract class GenericOPRFTestBase {
 		}
 	}
 
-	protected static final record RFC9497PoprfTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] info, byte[] input,
+	protected static final record RFC9497POPRFTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] info, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
 
-	protected void runTestVectors(BcPOPRF poprf, RFC9497PoprfTestVector[] vectors) {
+	protected void runTestVectors(BcPOPRF poprf, RFC9497POPRFTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> poprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
@@ -69,10 +69,10 @@ abstract class GenericOPRFTestBase {
 		}
 	}
 
-	protected static final record RFC9497VoprfTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] input,
+	protected static final record RFC9497VOPRFTestVector(byte[] seed, byte[] keyInfo, byte[] secretKey, byte[] publicKey, byte[] input,
 		byte[] blind, byte[] blindedElement, byte[] evaluationElement, byte[] proof, byte[] proofRandomScalar, byte[] output) {}
 
-	protected void runTestVectors(BcVOPRF voprf, RFC9497VoprfTestVector[] vectors) {
+	protected void runTestVectors(BcVOPRF voprf, RFC9497VOPRFTestVector[] vectors) {
 		for (final var vector : vectors) {
 			final var keypair = assertDoesNotThrow(() -> voprf.deriveKeyPair(vector.seed(), vector.keyInfo()));
 			assertArrayEquals(vector.secretKey(), keypair.secretKey(), "secret key");
